@@ -1,0 +1,2 @@
+requests>=2.25.1
+tomli>=2.0.1
