@@ -3,10 +3,12 @@ import os
 from unittest.mock import patch
 from telegrambot import TelegramBot
 
+
 @pytest.fixture
 def telegram_bot():
     api_key = os.environ.get('TELEGRAM_API_KEY')
     return TelegramBot(api_key=api_key)
+
 
 @patch('telegrambot.requests.post')
 def test_get_chat_id(mock_post, telegram_bot):
@@ -25,6 +27,7 @@ def test_get_chat_id(mock_post, telegram_bot):
 
     assert telegram_bot.chat_id == 123
 
+
 @patch('telegrambot.requests.post')
 def test_get_none_chat_id(mock_post, telegram_bot):
     # Mock the response from the API
@@ -34,7 +37,8 @@ def test_get_none_chat_id(mock_post, telegram_bot):
 
     telegram_bot.get_chat_id()
 
-    assert telegram_bot.chat_id == None
+    assert telegram_bot.chat_id is None
+
 
 @patch('telegrambot.requests.post')
 def test_extract_message_id(mock_post, telegram_bot):
@@ -51,6 +55,7 @@ def test_extract_message_id(mock_post, telegram_bot):
 
     assert message_id == 3
 
+
 @patch('telegrambot.requests.post')
 def test_extract_none_message_id(mock_post, telegram_bot):
     # Mock the response from the API
@@ -60,7 +65,8 @@ def test_extract_none_message_id(mock_post, telegram_bot):
 
     message_id = telegram_bot.extract_message_id()
 
-    assert message_id == None
+    assert message_id is None
+
 
 @patch('telegrambot.requests.post')
 def test_read_message(mock_post, telegram_bot):
@@ -77,6 +83,7 @@ def test_read_message(mock_post, telegram_bot):
     message = telegram_bot.read_message()
 
     assert message == 'Hello World'
+
 
 @patch('telegrambot.requests.post')
 def test_send_message(mock_post, telegram_bot):
