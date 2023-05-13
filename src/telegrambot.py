@@ -5,9 +5,7 @@
 
 
 import logging
-import sys
 import requests
-import tomli
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -85,36 +83,3 @@ class TelegramBot():
                       timeout=10,
                       data={'chat_id': self.chat_id,
                             'text': message}).json()
-
-
-def read_config(configfile: str) -> str:
-    '''
-    Read TOML configfile and extract
-    Telegram API key field
-    '''
-
-    with open(configfile, 'rb') as config_reader:
-        config = tomli.load(config_reader)
-
-    return config['Telegram']['API_KEY']
-
-
-def main():
-    '''
-    Main function
-    Echo of the latest message sent to Telegram Bot
-    '''
-
-    # Read configfile
-    config = sys.argv[1]
-    api_key = read_config(config)
-
-    # Create Telegram object
-    telegrambot = TelegramBot(api_key)
-
-    message = telegrambot.read_message()
-    telegrambot.send_message(message)
-
-
-if __name__ == '__main__':
-    main()
