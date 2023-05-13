@@ -11,12 +11,14 @@ import tomli
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    level=logging.DEBUG)
+    level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
 class TelegramBot():
-    ''' Telegram Bot Class '''
+    '''
+    Telegram Bot Class
+    '''
 
     def __init__(self,
                  api_key: str):
@@ -25,41 +27,65 @@ class TelegramBot():
         logger.info("Initialised Telegrambot")
 
     def get_chat_id(self):
-        """ Extract chat ID TelegramBot field """
+        '''
+        Extract chat ID TelegramBot field
+        '''
         url = f'''https://api.telegram.org/bot{self.api_key}/getUpdates'''
-        data = requests.post(url, timeout=10).json()
-        logger.debug(data['result'][-1])
+        data = requests.post(url,
+                             timeout=10,
+                             data={'offset': -1}).json()
         if data['result']:
-            self.chat_id = data['result'][-1]['message']['chat']['id']
+            self.chat_id = data['result'][0]['message']['chat']['id']
         else:
             self.chat_id = None
 
-    def read_message(self):
-        ''' Read message from official TelegramBot API request '''
+    def extract_message_id(self):
+        '''
+        Extract the message identifier
+        '''
 
         url = f'''https://api.telegram.org/bot{self.api_key}/getUpdates'''
-        logger.debug('Extract data from %s', url)
-        data = requests.post(url, timeout=10).json()
+        data = requests.post(url,
+                             timeout=10,
+                             data={'offset': -1}).json()
 
-        # Extract text from last incoming data
-        message = data['result'][-1]['message']['text']
-        self.chat_id = data['result'][-1]['message']['chat']['id']
-        return message
+        # Extract the chat ID field from the newest incoming message
+        if data['result']:
+            return data['result'][-1]['update_id']
+        logger.warning('No detected messages.\
+            Plese send a message to bot to establish communication')
+        return None
+
+    def read_message(self):
+        '''
+        Read message from official TelegramBot API request
+        '''
+
+        url = f'''https://api.telegram.org/bot{self.api_key}/getUpdates'''
+        logger.info('Extract data from %s', url)
+        data = requests.post(url,
+                             timeout=10,
+                             data={'offset': -1}).json()
+
+        self.get_chat_id()
+        return data['result'][0]['message']['text']
 
     def send_message(self,
                      message: str):
-        ''' Sent message from official TelegramBot API request '''
-
-        # Update chat ID attribute
-        # self.get_chat_id()
+        '''
+        Sent message from official TelegramBot API request
+        '''
 
         # Build API request
         url = f'''https://api.telegram.org/bot{self.api_key}/sendMessage'''
-        data = {'chat_id': self.chat_id, 'text': message}
         logger.info('Sending message %s to %s', message, self.chat_id)
 
         # Post request
-        requests.post(url, data, timeout=10).json()
+        requests.post(url,
+                      timeout=10,
+                      data={'chat_id': self.chat_id,
+                            'text': message}).json()
+
 
 def read_config(configfile: str) -> str:
     '''
@@ -72,17 +98,23 @@ def read_config(configfile: str) -> str:
 
     return config['Telegram']['API_KEY']
 
+
 def main():
-    ''' Main function '''
+    '''
+    Main function
+    Echo of the latest message sent to Telegram Bot
+    '''
 
     # Read configfile
     config = sys.argv[1]
     api_key = read_config(config)
 
-    # Echo received text
+    # Create Telegram object
     telegrambot = TelegramBot(api_key)
-    # message = telegrambot.read_message()
-    telegrambot.send_message("Helloooo")
+
+    message = telegrambot.read_message()
+    telegrambot.send_message(message)
+
 
 if __name__ == '__main__':
     main()
