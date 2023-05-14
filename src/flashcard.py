@@ -75,7 +75,7 @@ class FlashCardBot:
 
         # Check if there is a pending to answer item,
         # if not, process command
-        if self.pending_item == True:
+        if self.pending_item is True:
             self.process_answer(message)
         else:
             # By default, the incoming message is the command
@@ -138,7 +138,7 @@ class FlashCardBot:
         '''
 
         try:
-            with open(self.datafile, 'r') as csvfile:
+            with open(self.datafile, 'r', encoding='UTF-8') as csvfile:
                 csvreader = csv.reader(csvfile)
                 rows = list(csvreader)
                 selected_row = random.choice(rows)
@@ -156,6 +156,9 @@ class FlashCardBot:
 
     def process_answer(self,
                        message: str):
+        '''
+        Check if answer sent via Telegram is correct
+        '''
         if message == self.answer:
             msg = 'OK!'
             self.telegrambot.send_message(msg)
