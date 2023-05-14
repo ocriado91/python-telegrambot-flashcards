@@ -40,7 +40,7 @@ class FlashCardBot:
         self.attempt = 0
 
     def polling(self,
-                sleep_time: int = 1):
+                sleep_time: int = 1): # pragma: no cover
         '''
         Check incoming message from TelegramBot API
         through  a polling mechanism
@@ -195,7 +195,7 @@ def read_config(configfile: str) -> dict:
     return config
 
 
-def main():
+def main(): #pragma: no cover
     '''
     Main function
     '''
@@ -210,5 +210,5 @@ def main():
     bot.polling()
 
 
-if __name__ == '__main__':
+if __name__ == '__main__': # pragma: no cover
     main()
