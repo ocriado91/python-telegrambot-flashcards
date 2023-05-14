@@ -5,6 +5,7 @@ A TelegramBot to learn new words
 
 import csv
 import logging
+import random
 import sys
 import time
 import tomli
@@ -24,7 +25,8 @@ class FlashCardBot:
 
     def __init__(self,
                  config: dict,
-                 datafile: str = 'data.csv') -> None:
+                 datafile: str = 'data.csv',
+                 max_attempts: int = 3) -> None:
         '''
         Constructor of FlashCardBot class
         '''
@@ -32,6 +34,10 @@ class FlashCardBot:
         self.config = config
         self.datafile = datafile
         self.telegrambot = TelegramBot(config['Telegram']['API_KEY'])
+        self.pending_item = False
+        self.answer = None
+        self.max_attemps = max_attempts
+        self.attempt = 0
 
     def polling(self,
                 sleep_time: int = 1):
@@ -67,22 +73,22 @@ class FlashCardBot:
         action defined into <ACTION>: <ITEM> format
         '''
 
-        try:
-            action, item = message.split(delimiter)
+        # Check if there is a pending to answer item,
+        # if not, process command
+        if self.pending_item == True:
+            self.process_answer(message)
+        else:
+            # By default, the incoming message is the command
+            # without related items
+            action = message
+            items = None
 
-            # Convert action to lowercase
-            action = action.lower()
+            # If a delimiter is detected, strip message
+            # to extract both fields
+            if delimiter in message:
+                action, items = message.split(delimiter)
 
-            # Trim whitespaces
-            action = action.strip()
-            item = item.strip()
-
-            logger.info('Detected action %s with text %s', action, item)
-            self.process_action(action, item)
-        except ValueError:
-            warning_message = f'No detected action for message: {message}'
-            self.telegrambot.send_message(warning_message)
-            logger.warning(warning_message)
+            self.process_action(action, items)
 
     def process_action(self,
                        action: str,
@@ -95,10 +101,9 @@ class FlashCardBot:
         if action == 'new':
             logger.info('Applying New Item action')
             self.action_new_item(item)
-        elif action == 'remove':
-            logger.info('Removing item')
         elif action == 'show':
             logger.info('Showing item')
+            self.action_show_item()
         else:
             warning_message = f'Unknown action {action}'
             self.telegrambot.send_message(warning_message)
@@ -126,6 +131,54 @@ class FlashCardBot:
             warning_message = f'Invalid item {text}'
             self.telegrambot.send_message(warning_message)
             logger.warning(warning_message)
+
+    def action_show_item(self):
+        '''
+        Extract randomly item from datafile
+        '''
+
+        try:
+            with open(self.datafile, 'r') as csvfile:
+                csvreader = csv.reader(csvfile)
+                rows = list(csvreader)
+                selected_row = random.choice(rows)
+                logger.info('Selected row %s', selected_row)
+                word1 = selected_row[0]
+                self.answer = selected_row[1]
+                logger.info('Send word %s to bot', word1)
+                self.telegrambot.send_message(word1)
+                self.pending_item = True
+
+        except FileNotFoundError:
+            msg = 'No database found'
+            self.telegrambot.send_message(msg)
+            logger.info(msg)
+
+    def process_answer(self,
+                       message: str):
+        if message == self.answer:
+            msg = 'OK!'
+            self.telegrambot.send_message(msg)
+            logger.info(msg)
+            self.reset_answer()
+        else:
+            self.attempt += 1
+            msg = f'ERROR - Current attempt {self.attempt}'
+            self.telegrambot.send_message(msg)
+            logger.info(msg)
+            if self.attempt >= self.max_attemps:
+                self.reset_answer()
+                msg = f'Reached max. number of attemps ({self.max_attemps})'
+                self.telegrambot.send_message(msg)
+                logger.error(msg)
+
+    def reset_answer(self):
+        '''
+        Reset answer attributes
+        '''
+        self.answer = None
+        self.pending_item = False
+        self.attempt = 0
 
 
 def read_config(configfile: str) -> dict:
