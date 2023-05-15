@@ -109,8 +109,11 @@ class FlashCardBot:
 
         # Apply desired action
         if action == 'new':
-            logger.info('Applying New Item action')
+            logger.info('Adding item')
             self.action_new_item(item)
+        elif action == 'remove':
+            logger.info('Removing item')
+            self.action_remove_item(item)
         elif action == 'show':
             logger.info('Showing item')
             self.action_show_item()
@@ -145,6 +148,35 @@ class FlashCardBot:
             self.telegrambot.send_message(warning_message)
             logger.warning(warning_message)
 
+    def action_remove_item(self,
+                           text: str,
+                           delimiter: str = '-'):
+        '''
+        Remove item from database
+        '''
+
+        # Pre-process item
+        word1, word2 = text.split(delimiter)
+        word1 = word1.strip()
+        word2 = word2.strip()
+
+        logger.info('Trying to remove %s', word1)
+
+        # Check if item is into database
+        self.cursor.execute('''SELECT COUNT(*) FROM items where target=?''',
+                            (word1,))
+        result = self.cursor.fetchone()
+        if result[0] > 0:
+            self.cursor.execute("DELETE FROM items WHERE target=?", (word1,))
+            self.conn.commit()
+            msg = 'Successfully removed items'
+            self.telegrambot.send_message(msg)
+            logger.info(msg)
+        else:
+            warning_message = f'Item {word1} - {word2} not found in database'
+            self.telegrambot.send_message(warning_message)
+            logger.warning(warning_message)
+
     def action_show_item(self):
         '''
         Extract randomly item from database
@@ -152,14 +184,19 @@ class FlashCardBot:
 
         self.cursor.execute('SELECT * from items')
         rows = self.cursor.fetchall()
-        logger.info(rows)
-        selected_row = random.choice(rows)
-        logger.info('Selected row %s', selected_row)
-        word1 = selected_row[1]
-        self.answer = selected_row[2]
-        logger.info('Send word %s to bot', word1)
-        self.telegrambot.send_message(word1)
-        self.pending_item = True
+        if rows:
+            logger.info(rows)
+            selected_row = random.choice(rows)
+            logger.info('Selected row %s', selected_row)
+            word1 = selected_row[1]
+            self.answer = selected_row[2]
+            logger.info('Send word %s to bot', word1)
+            self.telegrambot.send_message(word1)
+            self.pending_item = True
+        else:
+            warning_message = 'No items found in database'
+            self.telegrambot.send_message(warning_message)
+            logger.warning(warning_message)
 
     def process_answer(self,
                        message: str):

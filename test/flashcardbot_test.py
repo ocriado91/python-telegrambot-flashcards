@@ -17,6 +17,13 @@ def test_process_action_new(flashcard_bot):
         mock_action_new_item.assert_called_once_with('word1 - word2')
 
 
+def test_process_action_remove(flashcard_bot):
+    with patch.object(flashcard_bot,
+                      'action_remove_item') as mock_action_remove_item:
+        flashcard_bot.process_action('remove', 'word1 - word3')
+        mock_action_remove_item.assert_called_once_with('word1 - word3')
+
+
 def test_process_action_show(flashcard_bot):
     with patch.object(flashcard_bot,
                       'action_show_item') as mock_action_show_item:
@@ -84,6 +91,28 @@ def test_process_answer_correct(flashcard_bot):
         assert not flashcard_bot.pending_item
         assert flashcard_bot.answer is None
         assert flashcard_bot.attempt == 0
+
+
+def test_action_remove_item_correct(flashcard_bot):
+    with patch.object(flashcard_bot.telegrambot,
+                      'send_message') as mock_send_message:
+        flashcard_bot.action_remove_item('word1 - word2')
+        mock_send_message.assert_called_once_with('Successfully removed items')
+
+
+def test_action_remove_item_invalid(flashcard_bot):
+    with patch.object(flashcard_bot.telegrambot,
+                      'send_message') as mock_send_message:
+        flashcard_bot.action_remove_item('word1 - word2')
+        msg = 'Item word1 - word2 not found in database'
+        mock_send_message.assert_called_once_with(msg)
+
+
+def test_action_show_item_empty(flashcard_bot):
+    with patch.object(flashcard_bot.telegrambot,
+                      'send_message') as mock_send_message:
+        flashcard_bot.action_show_item()
+        mock_send_message.assert_called_once_with('No items found in database')
 
 
 def test_process_answer_incorrect(flashcard_bot):
