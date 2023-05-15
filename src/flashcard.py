@@ -190,7 +190,7 @@ class FlashCardBot:
         self.pending_item = False
         self.attempt = 0
 
-    def close_connection(self):
+    def close_connection(self):  # pragma: no cover
         '''
         Close connection to database
         '''
