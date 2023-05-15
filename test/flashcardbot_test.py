@@ -28,20 +28,24 @@ def test_process_action_unknown(flashcard_bot):
     with patch.object(flashcard_bot.telegrambot,
                       'send_message') as mock_send_message:
         flashcard_bot.process_action('unknown', None)
-        mock_send_message.assert_called_once_with('Unknown action unknown')
+        mock_send_message.assert_called_with('Unknown action unknown')
 
 
 def test_action_new_item(flashcard_bot):
-    # Test adding a new item
-    flashcard_bot.action_new_item('word1 - word2')
+    with patch.object(flashcard_bot.telegrambot,
+                      'send_message') as mock_send_message:
 
-    # Verify that the item is added to the database
-    flashcard_bot.cursor.execute('SELECT * FROM items WHERE target=?',
-                                 ('word1',))
-    result = flashcard_bot.cursor.fetchone()
-    assert result is not None
-    assert result[1] == 'word1'
-    assert result[2] == 'word2'
+        # Test adding a new item
+        flashcard_bot.action_new_item('word1 - word2')
+        # Verify that the item is added to the database
+        flashcard_bot.cursor.execute('SELECT * FROM items WHERE target=?',
+                                     ('word1',))
+        result = flashcard_bot.cursor.fetchone()
+        assert result is not None
+        assert result[1] == 'word1'
+        assert result[2] == 'word2'
+        msg = 'Successfully added new item word1 - word2'
+        mock_send_message.assert_called_once_with(msg)
 
     # Test adding a duplicate item
     flashcard_bot.action_new_item('word1 - word2')
