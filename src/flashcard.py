@@ -3,9 +3,9 @@
 A TelegramBot to learn new words
 '''
 
-import csv
 import logging
 import random
+import sqlite3
 import sys
 import time
 import tomli
@@ -25,22 +25,32 @@ class FlashCardBot:
 
     def __init__(self,
                  config: dict,
-                 datafile: str = 'data.csv',
+                 database: str = 'flashcard.db',
                  max_attempts: int = 3) -> None:
         '''
         Constructor of FlashCardBot class
         '''
 
-        self.config = config
-        self.datafile = datafile
         self.telegrambot = TelegramBot(config['Telegram']['API_KEY'])
         self.pending_item = False
         self.answer = None
         self.max_attemps = max_attempts
         self.attempt = 0
 
+        # Create table
+        self.conn = sqlite3.connect(database)
+        self.cursor = self.conn.cursor()
+        self.cursor.execute('''CREATE TABLE IF NOT EXISTS items
+                            (id INTEGER PRIMARY KEY,
+                            target TEXT,
+                            source TEXT)''')
+
+        # Add unique constraint to the target column
+        self.cursor.execute('''CREATE UNIQUE INDEX IF NOT EXISTS idx_target_unique
+                            ON items (target)''')
+
     def polling(self,
-                sleep_time: int = 1): # pragma: no cover
+                sleep_time: int = 1):  # pragma: no cover
         '''
         Check incoming message from TelegramBot API
         through  a polling mechanism
@@ -120,10 +130,9 @@ class FlashCardBot:
             word1, word2 = text.split(delimiter)
             word1 = word1.strip()
             word2 = word2.strip()
-            with open(self.datafile, 'a',
-                      newline='', encoding='UTF-8') as csvfile:
-                csvwriter = csv.writer(csvfile)
-                csvwriter.writerow([word1, word2])
+            self.cursor.execute('''INSERT INTO items (target, source)
+                              VALUES (?, ?)''', (word1, word2))
+            self.conn.commit()
             msg = f'Successfully added new item {word1} - {word2}'
             self.telegrambot.send_message(msg)
             logging.info(msg)
@@ -131,28 +140,26 @@ class FlashCardBot:
             warning_message = f'Invalid item {text}'
             self.telegrambot.send_message(warning_message)
             logger.warning(warning_message)
+        except sqlite3.IntegrityError:
+            warning_message = f'Item with target "{word1}" already exists'
+            self.telegrambot.send_message(warning_message)
+            logger.warning(warning_message)
 
     def action_show_item(self):
         '''
-        Extract randomly item from datafile
+        Extract randomly item from database
         '''
 
-        try:
-            with open(self.datafile, 'r', encoding='UTF-8') as csvfile:
-                csvreader = csv.reader(csvfile)
-                rows = list(csvreader)
-                selected_row = random.choice(rows)
-                logger.info('Selected row %s', selected_row)
-                word1 = selected_row[0]
-                self.answer = selected_row[1]
-                logger.info('Send word %s to bot', word1)
-                self.telegrambot.send_message(word1)
-                self.pending_item = True
-
-        except FileNotFoundError:
-            msg = 'No database found'
-            self.telegrambot.send_message(msg)
-            logger.info(msg)
+        self.cursor.execute('SELECT * from items')
+        rows = self.cursor.fetchall()
+        logger.info(rows)
+        selected_row = random.choice(rows)
+        logger.info('Selected row %s', selected_row)
+        word1 = selected_row[1]
+        self.answer = selected_row[2]
+        logger.info('Send word %s to bot', word1)
+        self.telegrambot.send_message(word1)
+        self.pending_item = True
 
     def process_answer(self,
                        message: str):
@@ -183,6 +190,13 @@ class FlashCardBot:
         self.pending_item = False
         self.attempt = 0
 
+    def close_connection(self):
+        '''
+        Close connection to database
+        '''
+        self.cursor.close()
+        self.conn.close()
+
 
 def read_config(configfile: str) -> dict:
     '''
@@ -195,7 +209,7 @@ def read_config(configfile: str) -> dict:
     return config
 
 
-def main(): #pragma: no cover
+def main():  # pragma: no cover
     '''
     Main function
     '''
@@ -206,9 +220,12 @@ def main(): #pragma: no cover
     # Built FlashCard Bot object
     bot = FlashCardBot(config)
 
-    # Start polling mechanism
-    bot.polling()
+    try:
+        # Start polling mechanism
+        bot.polling()
+    except KeyboardInterrupt:
+        bot.close_connection()
 
 
-if __name__ == '__main__': # pragma: no cover
+if __name__ == '__main__':  # pragma: no cover
     main()
