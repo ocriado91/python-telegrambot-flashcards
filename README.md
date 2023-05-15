@@ -1,4 +1,6 @@
 # Python Telegram Bot Flashcards
+![github-action-badge](https://github.com/ocriado91/python-telegrambot-flashcards/actions/workflows/python.yaml/badge.svg)
+[![codecov](https://codecov.io/gh/ocriado91/python-telegrambot-flashcards/branch/main/graph/badge.svg?token=bjdlYmQmOw)](https://codecov.io/gh/ocriado91/python-telegrambot-flashcards)
 
 This repository contains a Python Telegram Bot that allows users to create and study flashcards within a Telegram chat interface. The bot utilizes the Telegram Bot API and provides a simple and interactive way for users to enhance their learning experience.
 
