@@ -3,14 +3,14 @@
 A TelegramBot to learn new words
 '''
 
+from datetime import datetime
+
 import logging
 import random
 import sqlite3
 import sys
 import time
 import tomli
-
-from datetime import datetime
 
 from telegrambot import TelegramBot
 
@@ -19,7 +19,7 @@ logging.basicConfig(
     level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-DATE_FMT='%Y/%m/%dT%H:%M:%S'
+DATE_FMT = '%Y/%m/%dT%H:%M:%S'
 
 
 class FlashCardBot:
@@ -144,12 +144,11 @@ class FlashCardBot:
             word1 = word1.strip()
             word2 = word2.strip()
 
-            self.cursor.execute('''INSERT INTO items
-                              (inserted_date, target, source,
-                              period_type, answer_correct_count,
-                              answer_wrong_count, next_attempt_date)
-                              VALUES (?, ?, ?, ?, ?, ?, ?)''',
-                              (now, word1, word2, "Daily", 0, 0, None))
+            self.cursor.execute('''INSERT INTO items (inserted_date, target,
+                                source, period_type, answer_correct_count,
+                                answer_wrong_count, next_attempt_date)
+                                VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                                (now, word1, word2, "Daily", 0, 0, None))
             self.conn.commit()
             msg = f'Successfully added new item {word1} - {word2}'
             self.telegrambot.send_message(msg)
