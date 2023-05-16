@@ -49,8 +49,8 @@ def test_action_new_item(flashcard_bot):
                                      ('word1',))
         result = flashcard_bot.cursor.fetchone()
         assert result is not None
-        assert result[1] == 'word1'
-        assert result[2] == 'word2'
+        assert result[2] == 'word1'
+        assert result[3] == 'word2'
         msg = 'Successfully added new item word1 - word2'
         mock_send_message.assert_called_once_with(msg)
 
@@ -61,7 +61,7 @@ def test_action_new_item(flashcard_bot):
     flashcard_bot.cursor.execute('''SELECT COUNT(*)
                                  FROM items WHERE target=?''', ('word1',))
     result = flashcard_bot.cursor.fetchone()
-    assert result[0] == 1  # Should still have only 1 item with target 'apple'
+    assert result[0] == 1  # Should still have only 1 item with target 'word1'
 
 
 def test_action_new_item_invalid(flashcard_bot):

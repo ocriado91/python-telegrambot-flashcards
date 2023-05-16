@@ -10,12 +10,16 @@ import sys
 import time
 import tomli
 
+from datetime import datetime
+
 from telegrambot import TelegramBot
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+DATE_FMT='%Y/%m/%dT%H:%M:%S'
 
 
 class FlashCardBot:
@@ -42,8 +46,13 @@ class FlashCardBot:
         self.cursor = self.conn.cursor()
         self.cursor.execute('''CREATE TABLE IF NOT EXISTS items
                             (id INTEGER PRIMARY KEY,
+                            inserted_date TEXT,
                             target TEXT,
-                            source TEXT)''')
+                            source TEXT,
+                            period_type TEXT,
+                            answer_correct_count INTEGER,
+                            answer_wrong_count INTEGER,
+                            next_attempt_date TEXT)''')
 
         # Add unique constraint to the target column
         self.cursor.execute('''CREATE UNIQUE INDEX IF NOT EXISTS idx_target_unique
@@ -130,11 +139,17 @@ class FlashCardBot:
         '''
 
         try:
+            now = datetime.strftime(datetime.now(), DATE_FMT)
             word1, word2 = text.split(delimiter)
             word1 = word1.strip()
             word2 = word2.strip()
-            self.cursor.execute('''INSERT INTO items (target, source)
-                              VALUES (?, ?)''', (word1, word2))
+
+            self.cursor.execute('''INSERT INTO items
+                              (inserted_date, target, source,
+                              period_type, answer_correct_count,
+                              answer_wrong_count, next_attempt_date)
+                              VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                              (now, word1, word2, "Daily", 0, 0, None))
             self.conn.commit()
             msg = f'Successfully added new item {word1} - {word2}'
             self.telegrambot.send_message(msg)
@@ -188,8 +203,8 @@ class FlashCardBot:
             logger.info(rows)
             selected_row = random.choice(rows)
             logger.info('Selected row %s', selected_row)
-            word1 = selected_row[1]
-            self.answer = selected_row[2]
+            word1 = selected_row[2]
+            self.answer = selected_row[3]
             logger.info('Send word %s to bot', word1)
             self.telegrambot.send_message(word1)
             self.pending_item = True
