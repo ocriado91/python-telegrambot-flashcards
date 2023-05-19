@@ -148,7 +148,7 @@ class FlashCardBot:
                                 source, period_type, answer_correct_count,
                                 answer_wrong_count, last_attempt_date)
                                 VALUES (?, ?, ?, ?, ?, ?, ?)''',
-                                (now, word1, word2, "Daily", 0, 0, None))
+                                (now, word1, word2, "Daily", 0, 0, now))
             self.conn.commit()
             msg = f'Successfully added new item {word1} - {word2}'
             self.telegrambot.send_message(msg)
@@ -204,6 +204,8 @@ class FlashCardBot:
             logger.info('Selected row %s', self.target)
             logger.info('Send word %s to bot', self.target)
             self.telegrambot.send_message(self.target[2])
+            now = datetime.strftime(datetime.now(), DATE_FMT)
+            self.update_db_field('last_attempt_date', now)
             self.pending_item = True
         else:
             warning_message = 'No items found in database'
@@ -240,6 +242,21 @@ class FlashCardBot:
         self.target = []
         self.pending_item = False
         self.attempt = 0
+
+    def update_db_field(self,
+                        field: str,
+                        value: str):
+        '''
+        Update a numeric field into database
+        '''
+
+        logger.info(self.target)
+        sql_query = f'''UPDATE items
+                        SET {field} = '{value}'
+                        WHERE target='{self.target[2]}';'''
+        self.cursor.execute(sql_query)
+        self.conn.commit()
+        logger.info('Successfully updated answer_correct_count')
 
     def update_db_numeric_field(self,
                                 field: str):
