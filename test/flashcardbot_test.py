@@ -77,20 +77,21 @@ def test_action_show_item(flashcard_bot):
         flashcard_bot.action_show_item()
 
         mock_send_message.assert_called_once_with('word1')
-        assert flashcard_bot.answer == 'word2'
+        assert flashcard_bot.target[2] == 'word1'
+        assert flashcard_bot.target[3] == 'word2'
         assert flashcard_bot.pending_item
 
 
 def test_process_answer_correct(flashcard_bot):
-    flashcard_bot.pending_item = True
-    flashcard_bot.answer = 'word2'
+    flashcard_bot.target = [1, '2020', 'word1', 'word2']
+
     with patch.object(flashcard_bot.telegrambot,
                       'send_message') as mock_send_message:
         flashcard_bot.process_answer('word2')
+
         mock_send_message.assert_called_once_with('OK!')
-        assert not flashcard_bot.pending_item
-        assert flashcard_bot.answer is None
         assert flashcard_bot.attempt == 0
+        assert not flashcard_bot.pending_item
 
 
 def test_action_remove_item_correct(flashcard_bot):
@@ -116,7 +117,7 @@ def test_action_show_item_empty(flashcard_bot):
 
 
 def test_process_answer_incorrect(flashcard_bot):
-    flashcard_bot.answer = 'word2'
+    flashcard_bot.target = [1, '2020', 'word1', 'word2']
 
     with patch.object(flashcard_bot.telegrambot,
                       'send_message') as mock_send_message:
@@ -128,7 +129,7 @@ def test_process_answer_incorrect(flashcard_bot):
 
 
 def test_process_answer_max_attempts(flashcard_bot):
-    flashcard_bot.answer = 'word2'
+    flashcard_bot.target = [1, '2020', 'word1', 'word2']
     flashcard_bot.attempt = 2
 
     flashcard_bot.process_answer('wrong_answer')
