@@ -16,13 +16,13 @@ def mock_cursor():
     rows = [
         # Sample data for the test rows
         # Adjust the data according to your needs
-        (1, '2022/05/20T12:00:00', 'Hello', 'Hola', 'Daily',
+        (1, '2022/05/20T12:00:00', 'Hello', 'Hola', 0,
          0, 0, '2023/04/12T19:00:00'),
-        (2, '2023/05/20T12:00:00', 'Hello', 'Hola', 'Weekly',
+        (2, '2023/05/20T12:00:00', 'Hello', 'Hola', 1,
          0, 0, '2023/04/12T12:00:00'),
-        (3, '2023/05/20T12:00:00', 'Hello', 'Hola', 'Bi-Weekly',
+        (3, '2023/05/20T12:00:00', 'Hello', 'Hola', 2,
          0, 0, '2023/04/06T12:00:00'),
-        (4, '2023/05/20T12:00:00', 'Hello', 'Hola', 'Monthly',
+        (4, '2023/05/20T12:00:00', 'Hello', 'Hola', 3,
          0, 0, '2023/04/17t12:00:00')
     ]
     mock_cursor = Mock()
@@ -105,7 +105,7 @@ def test_action_show_item(flashcard_bot):
 
 
 def test_process_answer_correct(flashcard_bot):
-    flashcard_bot.target = [1, '2020', 'word1', 'word2']
+    flashcard_bot.target = [1, '2020', 'word1', 'word2', 0, 0, 0]
 
     with patch.object(flashcard_bot.telegrambot,
                       'send_message') as mock_send_message:
@@ -139,7 +139,7 @@ def test_action_show_item_empty(flashcard_bot):
 
 
 def test_process_answer_incorrect(flashcard_bot):
-    flashcard_bot.target = [1, '2020', 'word1', 'word2']
+    flashcard_bot.target = [1, '2020', 'word1', 'word2', 0, 0, 0]
 
     with patch.object(flashcard_bot.telegrambot,
                       'send_message') as mock_send_message:
@@ -153,7 +153,7 @@ def test_process_answer_incorrect(flashcard_bot):
 def test_process_answer_max_attempts(flashcard_bot):
     with patch.object(flashcard_bot.telegrambot,
                       'get_chat_id') as _:
-        flashcard_bot.target = [1, '2020', 'word1', 'word2']
+        flashcard_bot.target = [1, '2020', 'word1', 'word2', 0, 0, 0]
         flashcard_bot.attempt = 2
 
         flashcard_bot.process_answer('wrong_answer')
@@ -208,3 +208,45 @@ def test_scheduler(mock_cursor, flashcard_bot):
         flashcard_bot.scheduler()
         # Assert number of calls to show item action
         assert mock_action_show_item.call_count == 4
+
+
+def test_process_correct_answer(flashcard_bot):
+
+    with patch.object(flashcard_bot.telegrambot, 'get_chat_id') as _,\
+         patch.object(flashcard_bot.telegrambot,
+                      'send_message') as mock_send_message:
+        flashcard_bot.target = [1, '2020', 'word1', 'word2', 0, 160, 0]
+        flashcard_bot.process_correct_answer()
+        msg = 'Modified word1 from Daily to Weekly'
+        mock_send_message.assert_called_with(msg)
+
+        flashcard_bot.target = [1, '2020', 'word1', 'word2', 1, 160, 0]
+        flashcard_bot.process_correct_answer()
+        msg = 'Modified word1 from Weekly to Bi-Weekly'
+        mock_send_message.assert_called_with(msg)
+
+        flashcard_bot.target = [1, '2020', 'word1', 'word2', 2, 160, 0]
+        flashcard_bot.process_correct_answer()
+        msg = 'Modified word1 from Bi-Weekly to Monthly'
+        mock_send_message.assert_called_with(msg)
+
+
+def test_process_wrong_answer(flashcard_bot):
+
+    with patch.object(flashcard_bot.telegrambot, 'get_chat_id') as _,\
+         patch.object(flashcard_bot.telegrambot,
+                      'send_message') as mock_send_message:
+        flashcard_bot.target = [1, '2020', 'word1', 'word2', 3, 0, 160]
+        flashcard_bot.process_wrong_answer()
+        msg = 'Modified word1 from Monthly to Bi-Weekly'
+        mock_send_message.assert_called_with(msg)
+
+        flashcard_bot.target = [1, '2020', 'word1', 'word2', 2, 0, 160]
+        flashcard_bot.process_wrong_answer()
+        msg = 'Modified word1 from Bi-Weekly to Weekly'
+        mock_send_message.assert_called_with(msg)
+
+        flashcard_bot.target = [1, '2020', 'word1', 'word2', 1, 0, 160]
+        flashcard_bot.process_wrong_answer()
+        msg = 'Modified word1 from Weekly to Daily'
+        mock_send_message.assert_called_with(msg)
