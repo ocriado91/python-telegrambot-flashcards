@@ -21,6 +21,11 @@ logger = logging.getLogger(__name__)
 
 DATE_FMT = '%Y/%m/%dT%H:%M:%S'
 
+SECONDS_IN_A_DAY = 24 * 60 * 60
+SECONDS_IN_A_WEEK = 7 * SECONDS_IN_A_DAY
+SECONDS_IN_TWO_WEEKS = 2 * SECONDS_IN_A_WEEK
+SECONDS_IN_A_MONTH = 30 * SECONDS_IN_A_DAY  # Approximation for simplicity
+
 
 class FlashCardBot:
     '''
@@ -67,6 +72,7 @@ class FlashCardBot:
 
         last_message_id = -1
         while True:
+            self.scheduler()
             message_id = self.telegrambot.extract_message_id()
 
             # Discard first iteration until new incoming message
@@ -83,6 +89,43 @@ class FlashCardBot:
                     last_message_id = message_id
 
             time.sleep(sleep_time)
+
+    def scheduler(self):
+        '''
+        Check scheduled flashcards
+        '''
+
+        rows = self.cursor.execute('''SELECT * from items''').fetchall()
+        for row in rows:
+            item_date = datetime.strptime(row[7], DATE_FMT)
+            now = datetime.now()
+            difference = now - item_date
+
+            # Extract flashcard periodicity type
+            period_type = row[4]
+            logger.debug('Flashcard type = %s', period_type)
+
+            if not self.pending_item:
+                if "Daily" == period_type and\
+                        difference.total_seconds() >= SECONDS_IN_A_DAY:
+                    logger.info('Detected element %s with a diff = %s',
+                                row, difference.total_seconds())
+                    self.action_show_item(row)
+                elif "Weekly" == period_type and\
+                        difference.total_seconds() >= SECONDS_IN_A_WEEK:
+                    logger.info('Detected element %s with a diff = %s',
+                                row, difference.total_seconds())
+                    self.action_show_item(row)
+                elif "Bi-Weekly" == period_type and\
+                        difference.total_seconds() >= SECONDS_IN_TWO_WEEKS:
+                    logger.info('Detected element %s with a diff = %s',
+                                row, difference.total_seconds())
+                    self.action_show_item(row)
+                elif "Monthly" == period_type and\
+                        difference.total_seconds() >= SECONDS_IN_A_MONTH:
+                    logger.info('Detected element %s with a diff = %s',
+                                row, difference.total_seconds())
+                    self.action_show_item(row)
 
     def process_message(self,
                         message: str,
@@ -191,26 +234,28 @@ class FlashCardBot:
             self.telegrambot.send_message(warning_message)
             logger.warning(warning_message)
 
-    def action_show_item(self):
+    def action_show_item(self,
+                         rows=None):
         '''
         Extract randomly item from database
         '''
 
-        self.cursor.execute('SELECT * from items')
-        rows = self.cursor.fetchall()
+        if not rows:
+            rows = self.cursor.execute('SELECT * from items').fetchall()
+            try:
+                rows = random.choice(rows)
+            except IndexError:
+                warning_message = 'No items found in database'
+                self.telegrambot.send_message(warning_message)
+                logger.warning(warning_message)
         if rows:
-            logger.info(rows)
-            self.target = random.choice(rows)
-            logger.info('Selected row %s', self.target)
-            logger.info('Send word %s to bot', self.target)
+            self.target = rows
+            logger.info('Selected row %s', self.target[2])
+            logger.info('Send word %s to bot', self.target[2])
             self.telegrambot.send_message(self.target[2])
             now = datetime.strftime(datetime.now(), DATE_FMT)
             self.update_db_field('last_attempt_date', now)
             self.pending_item = True
-        else:
-            warning_message = 'No items found in database'
-            self.telegrambot.send_message(warning_message)
-            logger.warning(warning_message)
 
     def process_answer(self,
                        message: str):
@@ -250,13 +295,12 @@ class FlashCardBot:
         Update a numeric field into database
         '''
 
-        logger.info(self.target)
         sql_query = f'''UPDATE items
                         SET {field} = '{value}'
                         WHERE target='{self.target[2]}';'''
         self.cursor.execute(sql_query)
         self.conn.commit()
-        logger.info('Successfully updated answer_correct_count')
+        logger.info('Successfully updated %s', field)
 
     def update_db_numeric_field(self,
                                 field: str):
@@ -264,13 +308,12 @@ class FlashCardBot:
         Update a numeric field into database
         '''
 
-        logger.info(self.target)
         sql_query = f'''UPDATE items
                         SET {field} = {field} + 1
                         WHERE target='{self.target[2]}';'''
         self.cursor.execute(sql_query)
         self.conn.commit()
-        logger.info('Successfully updated answer_correct_count')
+        logger.info('Successfully updated %s', field)
 
     def close_connection(self):  # pragma: no cover
         '''

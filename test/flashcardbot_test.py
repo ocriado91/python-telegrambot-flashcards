@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 from flashcard import FlashCardBot, read_config
 
 
@@ -8,6 +8,26 @@ def flashcard_bot():
     config = {'Telegram':
               {'API_KEY': 'api_key'}}
     return FlashCardBot(config, database='test_data.db', max_attempts=3)
+
+
+@pytest.fixture
+def mock_cursor():
+    # Mock the database cursor for the test
+    rows = [
+        # Sample data for the test rows
+        # Adjust the data according to your needs
+        (1, '2022/05/20T12:00:00', 'Hello', 'Hola', 'Daily',
+         0, 0, '2023/04/12T19:00:00'),
+        (2, '2023/05/20T12:00:00', 'Hello', 'Hola', 'Weekly',
+         0, 0, '2023/04/12T12:00:00'),
+        (3, '2023/05/20T12:00:00', 'Hello', 'Hola', 'Bi-Weekly',
+         0, 0, '2023/04/06T12:00:00'),
+        (4, '2023/05/20T12:00:00', 'Hello', 'Hola', 'Monthly',
+         0, 0, '2023/04/17t12:00:00')
+    ]
+    mock_cursor = Mock()
+    mock_cursor.execute.return_value.fetchall.return_value = rows
+    return mock_cursor
 
 
 def test_process_action_new(flashcard_bot):
@@ -40,8 +60,9 @@ def test_process_action_unknown(flashcard_bot):
 
 def test_action_new_item(flashcard_bot):
     with patch.object(flashcard_bot.telegrambot,
-                      'send_message') as mock_send_message:
-
+                      'send_message') as mock_send_message, \
+        patch.object(flashcard_bot.telegrambot,
+                     'get_chat_id') as _:
         # Test adding a new item
         flashcard_bot.action_new_item('word1 - word2')
         # Verify that the item is added to the database
@@ -54,14 +75,15 @@ def test_action_new_item(flashcard_bot):
         msg = 'Successfully added new item word1 - word2'
         mock_send_message.assert_called_once_with(msg)
 
-    # Test adding a duplicate item
-    flashcard_bot.action_new_item('word1 - word2')
+        # Test adding a duplicate item
+        flashcard_bot.action_new_item('word1 - word2')
 
-    # Verify that the duplicate item is not added
-    flashcard_bot.cursor.execute('''SELECT COUNT(*)
-                                 FROM items WHERE target=?''', ('word1',))
-    result = flashcard_bot.cursor.fetchone()
-    assert result[0] == 1  # Should still have only 1 item with target 'word1'
+        # Verify that the duplicate item is not added
+        flashcard_bot.cursor.execute('''SELECT COUNT(*)
+                                    FROM items WHERE target=?''', ('word1',))
+        result = flashcard_bot.cursor.fetchone()
+        # Should still have only 1 item with target 'word1'
+        assert result[0] == 1
 
 
 def test_action_new_item_invalid(flashcard_bot):
@@ -129,12 +151,14 @@ def test_process_answer_incorrect(flashcard_bot):
 
 
 def test_process_answer_max_attempts(flashcard_bot):
-    flashcard_bot.target = [1, '2020', 'word1', 'word2']
-    flashcard_bot.attempt = 2
+    with patch.object(flashcard_bot.telegrambot,
+                      'get_chat_id') as _:
+        flashcard_bot.target = [1, '2020', 'word1', 'word2']
+        flashcard_bot.attempt = 2
 
-    flashcard_bot.process_answer('wrong_answer')
-    assert flashcard_bot.attempt == 0
-    assert not flashcard_bot.pending_item
+        flashcard_bot.process_answer('wrong_answer')
+        assert flashcard_bot.attempt == 0
+        assert not flashcard_bot.pending_item
 
 
 def test_process_message(flashcard_bot):
@@ -172,3 +196,15 @@ def test_process_message(flashcard_bot):
 def test_read_config():
     config = read_config('config/template.toml')
     assert config['Telegram']['API_KEY'] == "<YOUR_API_KEY>"
+
+
+def test_scheduler(mock_cursor, flashcard_bot):
+
+    flashcard_bot.cursor = mock_cursor
+    # Mock the action_show_item method
+    with patch.object(flashcard_bot, 'action_show_item') as \
+         mock_action_show_item:
+        # Call the scheduler method
+        flashcard_bot.scheduler()
+        # Assert number of calls to show item action
+        assert mock_action_show_item.call_count == 4
