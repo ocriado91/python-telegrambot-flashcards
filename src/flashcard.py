@@ -3,6 +3,8 @@
 A TelegramBot to learn new words
 '''
 
+from datetime import datetime
+
 import logging
 import random
 import sqlite3
@@ -16,6 +18,8 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+DATE_FMT = '%Y/%m/%dT%H:%M:%S'
 
 
 class FlashCardBot:
@@ -33,7 +37,7 @@ class FlashCardBot:
 
         self.telegrambot = TelegramBot(config['Telegram']['API_KEY'])
         self.pending_item = False
-        self.answer = None
+        self.target = []
         self.max_attemps = max_attempts
         self.attempt = 0
 
@@ -42,8 +46,13 @@ class FlashCardBot:
         self.cursor = self.conn.cursor()
         self.cursor.execute('''CREATE TABLE IF NOT EXISTS items
                             (id INTEGER PRIMARY KEY,
+                            inserted_date TEXT,
                             target TEXT,
-                            source TEXT)''')
+                            source TEXT,
+                            period_type TEXT,
+                            answer_correct_count INTEGER,
+                            answer_wrong_count INTEGER,
+                            last_attempt_date TEXT)''')
 
         # Add unique constraint to the target column
         self.cursor.execute('''CREATE UNIQUE INDEX IF NOT EXISTS idx_target_unique
@@ -130,11 +139,16 @@ class FlashCardBot:
         '''
 
         try:
+            now = datetime.strftime(datetime.now(), DATE_FMT)
             word1, word2 = text.split(delimiter)
             word1 = word1.strip()
             word2 = word2.strip()
-            self.cursor.execute('''INSERT INTO items (target, source)
-                              VALUES (?, ?)''', (word1, word2))
+
+            self.cursor.execute('''INSERT INTO items (inserted_date, target,
+                                source, period_type, answer_correct_count,
+                                answer_wrong_count, last_attempt_date)
+                                VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                                (now, word1, word2, "Daily", 0, 0, now))
             self.conn.commit()
             msg = f'Successfully added new item {word1} - {word2}'
             self.telegrambot.send_message(msg)
@@ -186,12 +200,12 @@ class FlashCardBot:
         rows = self.cursor.fetchall()
         if rows:
             logger.info(rows)
-            selected_row = random.choice(rows)
-            logger.info('Selected row %s', selected_row)
-            word1 = selected_row[1]
-            self.answer = selected_row[2]
-            logger.info('Send word %s to bot', word1)
-            self.telegrambot.send_message(word1)
+            self.target = random.choice(rows)
+            logger.info('Selected row %s', self.target)
+            logger.info('Send word %s to bot', self.target)
+            self.telegrambot.send_message(self.target[2])
+            now = datetime.strftime(datetime.now(), DATE_FMT)
+            self.update_db_field('last_attempt_date', now)
             self.pending_item = True
         else:
             warning_message = 'No items found in database'
@@ -203,16 +217,18 @@ class FlashCardBot:
         '''
         Check if answer sent via Telegram is correct
         '''
-        if message == self.answer:
+        if message == self.target[3]:
             msg = 'OK!'
             self.telegrambot.send_message(msg)
             logger.info(msg)
+            self.update_db_numeric_field("answer_correct_count")
             self.reset_answer()
         else:
             self.attempt += 1
             msg = f'ERROR - Current attempt {self.attempt}'
             self.telegrambot.send_message(msg)
             logger.info(msg)
+            self.update_db_numeric_field("answer_wrong_count")
             if self.attempt >= self.max_attemps:
                 self.reset_answer()
                 msg = f'Reached max. number of attemps ({self.max_attemps})'
@@ -223,9 +239,38 @@ class FlashCardBot:
         '''
         Reset answer attributes
         '''
-        self.answer = None
+        self.target = []
         self.pending_item = False
         self.attempt = 0
+
+    def update_db_field(self,
+                        field: str,
+                        value: str):
+        '''
+        Update a numeric field into database
+        '''
+
+        logger.info(self.target)
+        sql_query = f'''UPDATE items
+                        SET {field} = '{value}'
+                        WHERE target='{self.target[2]}';'''
+        self.cursor.execute(sql_query)
+        self.conn.commit()
+        logger.info('Successfully updated answer_correct_count')
+
+    def update_db_numeric_field(self,
+                                field: str):
+        '''
+        Update a numeric field into database
+        '''
+
+        logger.info(self.target)
+        sql_query = f'''UPDATE items
+                        SET {field} = {field} + 1
+                        WHERE target='{self.target[2]}';'''
+        self.cursor.execute(sql_query)
+        self.conn.commit()
+        logger.info('Successfully updated answer_correct_count')
 
     def close_connection(self):  # pragma: no cover
         '''
