@@ -352,7 +352,7 @@ class FlashCardBot:
 
     def update_db_field(self,
                         field: str,
-                        value: str | PeriodType):
+                        value):
         '''
         Update a numeric field into database
         '''
