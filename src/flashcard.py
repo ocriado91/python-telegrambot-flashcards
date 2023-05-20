@@ -4,6 +4,7 @@ A TelegramBot to learn new words
 '''
 
 from datetime import datetime
+from enum import IntEnum
 
 import logging
 import random
@@ -20,6 +21,21 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 DATE_FMT = '%Y/%m/%dT%H:%M:%S'
+
+SECONDS_IN_A_DAY = 24 * 60 * 60
+SECONDS_IN_A_WEEK = 7 * SECONDS_IN_A_DAY
+SECONDS_IN_TWO_WEEKS = 2 * SECONDS_IN_A_WEEK
+SECONDS_IN_A_MONTH = 30 * SECONDS_IN_A_DAY  # Approximation for simplicity
+
+PERIOD_THRESHOLD = 5
+
+
+class PeriodType(IntEnum):
+    '''
+    Integer Enumeration to specify the types of frequency
+    to show the flashcards
+    '''
+    DAILY, WEEKLY, BIWEEKLY, MONTHLY = range(0, 4)
 
 
 class FlashCardBot:
@@ -49,7 +65,7 @@ class FlashCardBot:
                             inserted_date TEXT,
                             target TEXT,
                             source TEXT,
-                            period_type TEXT,
+                            period_type INT,
                             answer_correct_count INTEGER,
                             answer_wrong_count INTEGER,
                             last_attempt_date TEXT)''')
@@ -67,6 +83,7 @@ class FlashCardBot:
 
         last_message_id = -1
         while True:
+            self.scheduler()
             message_id = self.telegrambot.extract_message_id()
 
             # Discard first iteration until new incoming message
@@ -83,6 +100,43 @@ class FlashCardBot:
                     last_message_id = message_id
 
             time.sleep(sleep_time)
+
+    def scheduler(self):
+        '''
+        Check scheduled flashcards
+        '''
+
+        rows = self.cursor.execute('''SELECT * from items''').fetchall()
+        for row in rows:
+            item_date = datetime.strptime(row[7], DATE_FMT)
+            now = datetime.now()
+            difference = now - item_date
+
+            # Extract flashcard periodicity type
+            period_type = row[4]
+            logger.debug('Flashcard type = %s', period_type)
+
+            if not self.pending_item:
+                if PeriodType.DAILY == period_type and\
+                        difference.total_seconds() >= SECONDS_IN_A_DAY:
+                    logger.info('Detected element %s with a diff = %s',
+                                row, difference.total_seconds())
+                    self.action_show_item(row)
+                elif PeriodType.WEEKLY == period_type and\
+                        difference.total_seconds() >= SECONDS_IN_A_WEEK:
+                    logger.info('Detected element %s with a diff = %s',
+                                row, difference.total_seconds())
+                    self.action_show_item(row)
+                elif PeriodType.BIWEEKLY == period_type and\
+                        difference.total_seconds() >= SECONDS_IN_TWO_WEEKS:
+                    logger.info('Detected element %s with a diff = %s',
+                                row, difference.total_seconds())
+                    self.action_show_item(row)
+                elif PeriodType.MONTHLY == period_type and\
+                        difference.total_seconds() >= SECONDS_IN_A_MONTH:
+                    logger.info('Detected element %s with a diff = %s',
+                                row, difference.total_seconds())
+                    self.action_show_item(row)
 
     def process_message(self,
                         message: str,
@@ -144,11 +198,13 @@ class FlashCardBot:
             word1 = word1.strip()
             word2 = word2.strip()
 
+            logger.info(PeriodType.DAILY)
             self.cursor.execute('''INSERT INTO items (inserted_date, target,
                                 source, period_type, answer_correct_count,
                                 answer_wrong_count, last_attempt_date)
                                 VALUES (?, ?, ?, ?, ?, ?, ?)''',
-                                (now, word1, word2, "Daily", 0, 0, now))
+                                (now, word1, word2,
+                                 PeriodType.DAILY, 0, 0, now))
             self.conn.commit()
             msg = f'Successfully added new item {word1} - {word2}'
             self.telegrambot.send_message(msg)
@@ -191,26 +247,28 @@ class FlashCardBot:
             self.telegrambot.send_message(warning_message)
             logger.warning(warning_message)
 
-    def action_show_item(self):
+    def action_show_item(self,
+                         rows=None):
         '''
         Extract randomly item from database
         '''
 
-        self.cursor.execute('SELECT * from items')
-        rows = self.cursor.fetchall()
+        if not rows:
+            rows = self.cursor.execute('SELECT * from items').fetchall()
+            try:
+                rows = random.choice(rows)
+            except IndexError:
+                warning_message = 'No items found in database'
+                self.telegrambot.send_message(warning_message)
+                logger.warning(warning_message)
         if rows:
-            logger.info(rows)
-            self.target = random.choice(rows)
-            logger.info('Selected row %s', self.target)
-            logger.info('Send word %s to bot', self.target)
+            self.target = rows
+            logger.info('Selected row %s', self.target[2])
+            logger.info('Send word %s to bot', self.target[2])
             self.telegrambot.send_message(self.target[2])
             now = datetime.strftime(datetime.now(), DATE_FMT)
             self.update_db_field('last_attempt_date', now)
             self.pending_item = True
-        else:
-            warning_message = 'No items found in database'
-            self.telegrambot.send_message(warning_message)
-            logger.warning(warning_message)
 
     def process_answer(self,
                        message: str):
@@ -221,19 +279,68 @@ class FlashCardBot:
             msg = 'OK!'
             self.telegrambot.send_message(msg)
             logger.info(msg)
-            self.update_db_numeric_field("answer_correct_count")
+            self.process_correct_answer()
             self.reset_answer()
         else:
             self.attempt += 1
             msg = f'ERROR - Current attempt {self.attempt}'
             self.telegrambot.send_message(msg)
             logger.info(msg)
-            self.update_db_numeric_field("answer_wrong_count")
+            self.process_wrong_answer()
             if self.attempt >= self.max_attemps:
                 self.reset_answer()
                 msg = f'Reached max. number of attemps ({self.max_attemps})'
                 self.telegrambot.send_message(msg)
                 logger.error(msg)
+
+    def process_correct_answer(self):
+        '''
+        Update correct asnwer count and check type
+        '''
+
+        if PeriodType.DAILY == self.target[4] and\
+                self.target[5] > PERIOD_THRESHOLD:
+            self.update_db_field("period_type", PeriodType.WEEKLY)
+            msg = f'Modified {self.target[2]} from Daily to Weekly'
+            self.telegrambot.send_message(msg)
+            logger.info(msg)
+        elif PeriodType.WEEKLY == self.target[4] and\
+                self.target[5] > PERIOD_THRESHOLD * 2:
+            self.update_db_field("period_type", PeriodType.BIWEEKLY)
+            msg = f'Modified {self.target[2]} from Weekly to Bi-Weekly'
+            self.telegrambot.send_message(msg)
+            logger.info(msg)
+        elif PeriodType.BIWEEKLY == self.target[4] and\
+                self.target[5] > PERIOD_THRESHOLD * 3:
+            self.update_db_field("period_type", PeriodType.MONTHLY)
+            msg = f'Modified {self.target[2]} from Bi-Weekly to Monthly'
+            self.telegrambot.send_message(msg)
+            logger.info(msg)
+
+        self.update_db_numeric_field("answer_correct_count")
+
+    def process_wrong_answer(self):
+        '''
+        Update wrong answer count and check type
+        '''
+
+        self.update_db_numeric_field("answer_wrong_count")
+        if self.target[6] > 5:
+            if PeriodType.MONTHLY == self.target[4]:
+                self.update_db_field("period_type", PeriodType.BIWEEKLY)
+                msg = f'Modified {self.target[2]} from Monthly to Bi-Weekly'
+                self.telegrambot.send_message(msg)
+                logger.info(msg)
+            elif PeriodType.BIWEEKLY == self.target[4]:
+                self.update_db_field("period_type", PeriodType.WEEKLY)
+                msg = f'Modified {self.target[2]} from Bi-Weekly to Weekly'
+                self.telegrambot.send_message(msg)
+                logger.info(msg)
+            elif PeriodType.WEEKLY == self.target[4]:
+                self.update_db_field("period_type", PeriodType.DAILY)
+                msg = f'Modified {self.target[2]} from Weekly to Daily'
+                self.telegrambot.send_message(msg)
+                logger.info(msg)
 
     def reset_answer(self):
         '''
@@ -245,18 +352,17 @@ class FlashCardBot:
 
     def update_db_field(self,
                         field: str,
-                        value: str):
+                        value):
         '''
         Update a numeric field into database
         '''
 
-        logger.info(self.target)
         sql_query = f'''UPDATE items
                         SET {field} = '{value}'
                         WHERE target='{self.target[2]}';'''
         self.cursor.execute(sql_query)
         self.conn.commit()
-        logger.info('Successfully updated answer_correct_count')
+        logger.info('Successfully updated %s', field)
 
     def update_db_numeric_field(self,
                                 field: str):
@@ -264,13 +370,12 @@ class FlashCardBot:
         Update a numeric field into database
         '''
 
-        logger.info(self.target)
         sql_query = f'''UPDATE items
                         SET {field} = {field} + 1
                         WHERE target='{self.target[2]}';'''
         self.cursor.execute(sql_query)
         self.conn.commit()
-        logger.info('Successfully updated answer_correct_count')
+        logger.info('Successfully updated %s', field)
 
     def close_connection(self):  # pragma: no cover
         '''

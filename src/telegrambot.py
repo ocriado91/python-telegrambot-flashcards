@@ -73,7 +73,7 @@ class TelegramBot():
         '''
         Sent message from official TelegramBot API request
         '''
-
+        self.get_chat_id()
         # Build API request
         url = f'''https://api.telegram.org/bot{self.api_key}/sendMessage'''
         logger.info('Sending message %s to %s', message, self.chat_id)

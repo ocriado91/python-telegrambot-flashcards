@@ -89,7 +89,12 @@ def test_read_message(mock_post, telegram_bot):
 def test_send_message(mock_post, telegram_bot):
     # Mock the response from the API
     mock_post.return_value.json.return_value = {
-        'ok': True
+        'result': [
+            {
+                'message': {'text': 'Hello World',
+                            'chat': {'id': 123}}
+            }
+        ]
     }
 
     telegram_bot.chat_id = 123
