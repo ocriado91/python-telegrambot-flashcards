@@ -94,9 +94,14 @@ class FlashCardBot:
             # if incoming message is different from previous one
             if message_id:
                 if message_id != last_message_id:
-                    message = self.telegrambot.read_message()
-                    logger.info('Received message = %s', message)
-                    self.process_message(message)
+                    msg_type, msg_data = self.telegrambot.check_update()
+                    if 'text' == msg_type:
+                        message = self.telegrambot.read_message(msg_data)
+                        logger.info('Received message = %s', message)
+                        self.process_message(message)
+                    elif 'photo' == msg_type:
+                        logger.info('Processing picture!')
+                        self.process_photo(msg_data)
                     last_message_id = message_id
 
             time.sleep(sleep_time)
@@ -148,7 +153,7 @@ class FlashCardBot:
 
         # Check if there is a pending to answer item,
         # if not, process command
-        if self.pending_item is True:
+        if self.pending_item:
             self.process_answer(message)
         else:
             # By default, the incoming message is the command
@@ -162,6 +167,18 @@ class FlashCardBot:
                 action, items = message.split(delimiter)
 
             self.process_action(action, items)
+
+    def process_photo(self,
+                      data: dict):
+        '''
+        Process photo data
+        '''
+
+        logger.info('Processing photo')
+        file_id = data['photo'][0]['file_id']
+        logger.info('File ID = %s', file_id)
+        caption = data['caption']
+        logger.info('Caption = %s', caption)
 
     def process_action(self,
                        action: str,

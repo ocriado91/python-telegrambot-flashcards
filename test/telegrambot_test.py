@@ -68,19 +68,10 @@ def test_extract_none_message_id(mock_post, telegram_bot):
     assert message_id is None
 
 
-@patch('telegrambot.requests.post')
-def test_read_message(mock_post, telegram_bot):
-    # Mock the response from the API
-    mock_post.return_value.json.return_value = {
-        'result': [
-            {
-                'message': {'text': 'Hello World',
-                            'chat': {'id': 123}}
-            }
-        ]
-    }
+def test_read_message(telegram_bot):
+    msg_data = {'text': 'Hello World'}
 
-    message = telegram_bot.read_message()
+    message = telegram_bot.read_message(msg_data)
 
     assert message == 'Hello World'
 
@@ -109,3 +100,33 @@ def test_send_message(mock_post, telegram_bot):
         timeout=10,
         data={'chat_id': 123, 'text': 'Test message'}
     )
+
+
+@patch('telegrambot.requests.post')
+def test_check_text_update(mock_post, telegram_bot):
+    # Mock the response from the API
+    mock_post.return_value.json.return_value = {
+        'result': [
+            {
+                'message': {'text': 'Hello World'}
+            }
+        ]
+    }
+
+    msg_type, _ = telegram_bot.check_update()
+    assert 'text' == msg_type
+
+
+@patch('telegrambot.requests.post')
+def test_check_photo_update(mock_post, telegram_bot):
+    # Mock the response from the API
+    mock_post.return_value.json.return_value = {
+        'result': [
+            {
+                'message': {'photo': 'Smile :)'}
+            }
+        ]
+    }
+
+    msg_type, _ = telegram_bot.check_update()
+    assert 'photo' == msg_type

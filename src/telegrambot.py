@@ -54,19 +54,12 @@ class TelegramBot():
             Plese send a message to bot to establish communication')
         return None
 
-    def read_message(self):
+    def read_message(self,
+                     data: dict):
         '''
         Read message from official TelegramBot API request
         '''
-
-        url = f'''https://api.telegram.org/bot{self.api_key}/getUpdates'''
-        logger.info('Extract data from %s', url)
-        data = requests.post(url,
-                             timeout=10,
-                             data={'offset': -1}).json()
-
-        self.get_chat_id()
-        return data['result'][0]['message']['text']
+        return data['text']
 
     def send_message(self,
                      message: str):
@@ -83,3 +76,25 @@ class TelegramBot():
                       timeout=10,
                       data={'chat_id': self.chat_id,
                             'text': message}).json()
+
+    def check_update(self):
+        '''
+        Check incoming update from Telegram Bot
+        '''
+
+        url = f'''https://api.telegram.org/bot{self.api_key}/getUpdates'''
+        logger.info('Extract data from %s', url)
+        data = requests.post(url,
+                             timeout=10,
+                             data={'offset': -1}).json()
+
+        update_data = data['result'][0]['message']
+        logger.info(update_data)
+
+        if 'text' in update_data.keys():
+            return 'text', update_data
+
+        if 'photo' in update_data.keys():
+            return 'photo', update_data
+
+        return None, None
