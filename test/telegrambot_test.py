@@ -68,19 +68,10 @@ def test_extract_none_message_id(mock_post, telegram_bot):
     assert message_id is None
 
 
-@patch('telegrambot.requests.post')
-def test_read_message(mock_post, telegram_bot):
-    # Mock the response from the API
-    mock_post.return_value.json.return_value = {
-        'result': [
-            {
-                'message': {'text': 'Hello World',
-                            'chat': {'id': 123}}
-            }
-        ]
-    }
+def test_read_message(telegram_bot):
+    msg_data = {'text': 'Hello World'}
 
-    message = telegram_bot.read_message()
+    message = telegram_bot.read_message(msg_data)
 
     assert message == 'Hello World'
 
@@ -109,3 +100,73 @@ def test_send_message(mock_post, telegram_bot):
         timeout=10,
         data={'chat_id': 123, 'text': 'Test message'}
     )
+
+
+@patch('telegrambot.requests.post')
+def test_send_photo(mock_post, telegram_bot):
+    # Mock the response from the API
+    mock_post.return_value.json.return_value = {
+        'result': [
+            {
+                'message': {'chat': {'id': 123}}
+            }
+        ]
+    }
+
+    telegram_bot.chat_id = 123
+    telegram_bot.send_photo('Test message')
+
+    # Extract API key for environment variable
+    api_key = os.environ.get('TELEGRAM_API_KEY')
+
+    # Check if the API request was made with the correct parameters
+    mock_post.assert_called_with(
+        f'https://api.telegram.org/bot{api_key}/sendPhoto',
+        timeout=10,
+        data={'chat_id': 123, 'photo': 'Test message'}
+    )
+
+
+@patch('telegrambot.requests.post')
+def test_check_text_update(mock_post, telegram_bot):
+    # Mock the response from the API
+    mock_post.return_value.json.return_value = {
+        'result': [
+            {
+                'message': {'text': 'Hello World'}
+            }
+        ]
+    }
+
+    msg_type, _ = telegram_bot.check_update()
+    assert 'text' == msg_type
+
+
+@patch('telegrambot.requests.post')
+def test_check_photo_update(mock_post, telegram_bot):
+    # Mock the response from the API
+    mock_post.return_value.json.return_value = {
+        'result': [
+            {
+                'message': {'photo': 'Smile :)'}
+            }
+        ]
+    }
+
+    msg_type, _ = telegram_bot.check_update()
+    assert 'photo' == msg_type
+
+
+@patch('telegrambot.requests.post')
+def test_check_photo_other(mock_post, telegram_bot):
+    # Mock the response from the API
+    mock_post.return_value.json.return_value = {
+        'result': [
+            {
+                'message': {'other': 'Nothing to do here!'}
+            }
+        ]
+    }
+
+    msg_type, _ = telegram_bot.check_update()
+    assert msg_type is None
