@@ -68,10 +68,12 @@ class FlashCardBot:
                             period_type INT,
                             answer_correct_count INTEGER,
                             answer_wrong_count INTEGER,
-                            last_attempt_date TEXT)''')
+                            last_attempt_date TEXT,
+                            item_type TEXT)''')
 
         # Add unique constraint to the target column
-        self.cursor.execute('''CREATE UNIQUE INDEX IF NOT EXISTS idx_target_unique
+        self.cursor.execute('''CREATE UNIQUE INDEX IF NOT EXISTS
+                            idx_target_unique
                             ON items (target)''')
 
     def polling(self,
@@ -100,7 +102,6 @@ class FlashCardBot:
                         logger.info('Received message = %s', message)
                         self.process_message(message)
                     elif 'photo' == msg_type:
-                        logger.info('Processing picture!')
                         self.process_photo(msg_data)
                     last_message_id = message_id
 
@@ -169,7 +170,8 @@ class FlashCardBot:
             self.process_action(action, items)
 
     def process_photo(self,
-                      data: dict):
+                      data: dict,
+                      item_type: str = 'photo'):
         '''
         Process photo data
         '''
@@ -177,8 +179,29 @@ class FlashCardBot:
         logger.info('Processing photo')
         file_id = data['photo'][0]['file_id']
         logger.info('File ID = %s', file_id)
-        caption = data['caption']
-        logger.info('Caption = %s', caption)
+
+        # A picture must be have caption!!
+        try:
+            caption = data['caption']
+
+            logger.info('Caption = %s', caption)
+
+            now = datetime.strftime(datetime.now(), DATE_FMT)
+            self.cursor.execute('''INSERT INTO items (inserted_date, target,
+                                    source, period_type,
+                                    answer_correct_count, answer_wrong_count,
+                                    last_attempt_date, item_type)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
+                                (now, file_id, caption, PeriodType.DAILY,
+                                    0, 0, now, item_type))
+            self.conn.commit()
+            msg = 'Successfully added photo'
+            logger.info(msg)
+            self.telegrambot.send_message(msg)
+        except KeyError:
+            msg = 'Please, insert a caption into the photo'
+            logger.error(msg)
+            self.telegrambot.send_message(msg)
 
     def process_action(self,
                        action: str,
@@ -204,7 +227,8 @@ class FlashCardBot:
 
     def action_new_item(self,
                         text: str,
-                        delimiter: str = '-'):
+                        delimiter: str = '-',
+                        item_type: str = 'text'):
         '''
         Save new item into database
         '''
@@ -215,13 +239,13 @@ class FlashCardBot:
             word1 = word1.strip()
             word2 = word2.strip()
 
-            logger.info(PeriodType.DAILY)
             self.cursor.execute('''INSERT INTO items (inserted_date, target,
-                                source, period_type, answer_correct_count,
-                                answer_wrong_count, last_attempt_date)
-                                VALUES (?, ?, ?, ?, ?, ?, ?)''',
-                                (now, word1, word2,
-                                 PeriodType.DAILY, 0, 0, now))
+                                source, period_type,
+                                answer_correct_count, answer_wrong_count,
+                                last_attempt_date, item_type)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
+                                (now, word1, word2, PeriodType.DAILY,
+                                 0, 0, now, item_type))
             self.conn.commit()
             msg = f'Successfully added new item {word1} - {word2}'
             self.telegrambot.send_message(msg)
@@ -280,12 +304,17 @@ class FlashCardBot:
                 logger.warning(warning_message)
         if rows:
             self.target = rows
-            logger.info('Selected row %s', self.target[2])
-            logger.info('Send word %s to bot', self.target[2])
-            self.telegrambot.send_message(self.target[2])
-            now = datetime.strftime(datetime.now(), DATE_FMT)
-            self.update_db_field('last_attempt_date', now)
-            self.pending_item = True
+            if 'text' == self.target[-1]:
+                logger.info('Selected row %s', self.target[2])
+                logger.info('Send word %s to bot', self.target[2])
+                self.telegrambot.send_message(self.target[2])
+                now = datetime.strftime(datetime.now(), DATE_FMT)
+                self.update_db_field('last_attempt_date', now)
+                self.pending_item = True
+            elif 'photo' == self.target[-1]:
+                file_id = self.target[2]
+                self.telegrambot.send_photo(file_id)
+                self.pending_item = True
 
     def process_answer(self,
                        message: str):

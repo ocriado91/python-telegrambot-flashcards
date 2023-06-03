@@ -64,7 +64,7 @@ class TelegramBot():
     def send_message(self,
                      message: str):
         '''
-        Sent message from official TelegramBot API request
+        Send message from official TelegramBot API request
         '''
         self.get_chat_id()
         # Build API request
@@ -76,6 +76,21 @@ class TelegramBot():
                       timeout=10,
                       data={'chat_id': self.chat_id,
                             'text': message}).json()
+
+    def send_photo(self,
+                   file_id: str):
+        '''
+        Send photo from official TelegramBot API
+        '''
+
+        self.get_chat_id()
+
+        # Build API request
+        url = f'''https://api.telegram.org/bot{self.api_key}/sendPhoto'''
+        requests.post(url,
+                      timeout=10,
+                      data={'chat_id': self.chat_id,
+                            'photo': file_id}).json()
 
     def check_update(self):
         '''
