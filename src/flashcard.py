@@ -46,6 +46,7 @@ class FlashCardBot:
     def __init__(self,
                  config: dict,
                  database: str = 'flashcard.db',
+                 results_database: str = 'results.db',
                  max_attempts: int = 3) -> None:
         '''
         Constructor of FlashCardBot class
@@ -70,6 +71,16 @@ class FlashCardBot:
                             answer_wrong_count INTEGER,
                             last_attempt_date TEXT,
                             item_type TEXT)''')
+
+        # Create results table
+        self.results_conn = sqlite3.connect(results_database)
+        self.results_cursor = self.results_conn.cursor()
+        self.results_cursor.execute(
+            '''CREATE TABLE IF NOT EXISTS results
+            (id INTEGER PRIMARY KEY,
+            correct_results INTEGER,
+            wrong_results INTEGER,
+            timestamp TEXT)''')
 
         # Add unique constraint to the target column
         self.cursor.execute('''CREATE UNIQUE INDEX IF NOT EXISTS
@@ -122,24 +133,15 @@ class FlashCardBot:
             period_type = row[4]
             logger.debug('Flashcard type = %s', period_type)
 
+            daily_flag = PeriodType.DAILY == period_type and \
+                          difference.total_seconds() >= SECONDS_IN_A_DAY
+            weekly_flag = PeriodType.WEEKLY == period_type and \
+                           difference.total_seconds() > SECONDS_IN_A_WEEK
+            monthly_flag = PeriodType.MONTHLY == period_type and \
+                            difference.total_seconds() >= SECONDS_IN_A_MONTH
+
             if not self.pending_item:
-                if PeriodType.DAILY == period_type and\
-                        difference.total_seconds() >= SECONDS_IN_A_DAY:
-                    logger.info('Detected element %s with a diff = %s',
-                                row, difference.total_seconds())
-                    self.action_show_item(row)
-                elif PeriodType.WEEKLY == period_type and\
-                        difference.total_seconds() >= SECONDS_IN_A_WEEK:
-                    logger.info('Detected element %s with a diff = %s',
-                                row, difference.total_seconds())
-                    self.action_show_item(row)
-                elif PeriodType.BIWEEKLY == period_type and\
-                        difference.total_seconds() >= SECONDS_IN_TWO_WEEKS:
-                    logger.info('Detected element %s with a diff = %s',
-                                row, difference.total_seconds())
-                    self.action_show_item(row)
-                elif PeriodType.MONTHLY == period_type and\
-                        difference.total_seconds() >= SECONDS_IN_A_MONTH:
+                if daily_flag or weekly_flag or monthly_flag:
                     logger.info('Detected element %s with a diff = %s',
                                 row, difference.total_seconds())
                     self.action_show_item(row)
@@ -396,19 +398,41 @@ class FlashCardBot:
         self.pending_item = False
         self.attempt = 0
 
+    def update_progress(self):
+        '''
+        Update progress database
+        '''
+
+        logger.info('Trying to update progress DB!')
+        rows = self.cursor.execute(
+            '''SELECT id, answer_correct_count, answer_wrong_count
+            from items''').fetchall()
+
+        for row in rows:
+            id, ok_count, nok_count = row
+            now = datetime.strftime(datetime.now(), DATE_FMT)
+            self.results_cursor.execute('''INSERT INTO results (id,
+                                correct_results,
+                                wrong_results,
+                                timestamp)
+                                VALUES (?, ?, ?, ?)''',
+                                (id, ok_count, nok_count, now))
+            self.results_conn.commit()
+        logger.info('Successfully updated results DB!')
+
     def update_db_field(self,
                         field: str,
                         value):
         '''
         Update a numeric field into database
         '''
-
         sql_query = f'''UPDATE items
                         SET {field} = '{value}'
                         WHERE target='{self.target[2]}';'''
         self.cursor.execute(sql_query)
         self.conn.commit()
         logger.info('Successfully updated %s', field)
+        self.update_progress()
 
     def update_db_numeric_field(self,
                                 field: str):
@@ -422,6 +446,7 @@ class FlashCardBot:
         self.cursor.execute(sql_query)
         self.conn.commit()
         logger.info('Successfully updated %s', field)
+        self.update_progress()
 
     def close_connection(self):  # pragma: no cover
         '''
