@@ -436,16 +436,23 @@ def read_config(configfile: str) -> dict:
     Read TOM configuration file and extract fields
     '''
 
-    with open(configfile, 'rb') as config_reader:
-        config = tomli.load(config_reader)
-
-    return config
+    try:
+        with open(configfile, 'rb') as config_reader:
+            return tomli.load(config_reader)
+    except FileNotFoundError:
+        logger.error('Configuration file %s not found', configfile)
+        sys.exit(1)
 
 
 def main():  # pragma: no cover
     '''
     Main function
     '''
+
+    # Check number of arguments
+    if len(sys.argv) != 2:
+        logger.error("Please execute `python3 flashcard.py <CONFIG>`")
+        sys.exit(1)
 
     # Read configuration file
     config = read_config(sys.argv[1])
