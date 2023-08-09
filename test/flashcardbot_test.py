@@ -197,6 +197,11 @@ def test_read_config():
     config = read_config('config/template.toml')
     assert config['Telegram']['API_KEY'] == "<YOUR_API_KEY>"
 
+@patch('sys.exit')
+def test_read_config_with_invalid_file(mock_exit):
+    mock_exit.side_effect = FileNotFoundError()
+    with pytest.raises(FileNotFoundError):
+        read_config('configfile')
 
 def test_scheduler(mock_cursor, flashcard_bot):
 
