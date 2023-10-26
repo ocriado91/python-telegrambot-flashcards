@@ -25,8 +25,14 @@ To run the Python Telegram Bot Flashcards, you'll need the following:
 ```bash
 git clone https://github.com/ocriado91/python-telegrambot-flashcards.git
 ```
+2. Configure the virtual environment:
 
-2. Configure your Telegram Bot API key
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip3 install -r requirements.txt
+```
+3. Configure your Telegram Bot API key
 
 Please, use the official [Telegram Bot](https://core.telegram.org/bots/tutorial) tutorial for setup your own bot, and modify
 the `config/template.toml` file with the related information
