@@ -9,7 +9,7 @@ def flashcard_bot():
               {'API_KEY': 'api_key'},
               'FlashCardBot':
               {'Commands': {'command1'}}}
-    return FlashCardBot(config, database='test_data.db', max_attempts=3)
+    return FlashCardBot(config, database='test_data.db')
 
 
 @pytest.fixture
