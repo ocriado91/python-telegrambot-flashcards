@@ -1,6 +1,5 @@
 import pytest
-from unittest.mock import patch, Mock
-from flashcard import FlashCardBot, read_config, CommandException
+from flashcard import FlashCardBot, CommandException
 
 @pytest.fixture
 def flashcard_bot():
@@ -18,6 +17,10 @@ def test_check_command(flashcard_bot):
 
     valid_message = {"text": "/new_item"}
     assert "new_item" == flashcard_bot.check_command(valid_message)
+
+    empty_message = {}
+    with pytest.raises(CommandException):
+        flashcard_bot.check_command(empty_message)
 
     invalid_type = {"video": "funny cat"}
     with pytest.raises(CommandException):

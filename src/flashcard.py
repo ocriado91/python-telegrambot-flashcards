@@ -6,12 +6,11 @@ A TelegramBot to learn new words
 import logging
 import sys
 import time
-import tomli
 
 from telegrambot import TelegramBot
 
 from configuration import Configuration
-from storage_manager import StorageManager
+from storage_manager import StorageManager, StorageManagerException
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -57,9 +56,14 @@ class FlashCardBot:
         Returns:
             - str: Detected command name into message
         '''
-        logger.debug("Checking message %s into %s commands",
+        logger.info("Checking message %s into %s commands",
                      message,
                      self.config['FlashCardBot']['Commands'])
+
+        # In case of unsupported format, the TelegramBot package
+        # returns a None object. To check this case
+        if not message:
+            raise CommandException("Incoming message is empty")
 
         # Check if message type is text
         if "text" not in message.keys():
@@ -77,6 +81,32 @@ class FlashCardBot:
         Method to add a new element based on message
         '''
         logger.info("Adding new item %s", message)
+        item_type = list(message.keys())[0]
+        if item_type == "text":
+            text = message[item_type]
+            target, source = text.split('-')
+            self.storage_manager.insert_item(item_type,
+                                             target,
+                                             source)
+            msg = f'Successfully added new item {target} - {source}'
+            self.telegrambot.send_message(msg)
+            logging.info(msg)
+        elif item_type == "photo":
+            photo_info = message[item_type]
+            logger.info("Photo info: %s", photo_info)
+        elif item_type == "video":
+            video_info = message[item_type]
+            logger.info("Video info: %s", video_info)
+        elif item_type == "audio":
+            audio_info = message[item_type]
+            logger.info("Audio info: %s", audio_info)
+
+    def process_text(self,
+                     text: str) -> None:
+        '''
+        Process text item
+        '''
+
 
     def new_round(self):
         '''
@@ -124,6 +154,7 @@ class FlashCardBot:
 
                         # Incoming message processed. Time to flush pending
                         # command flag
+                        logger.info("Successfully processed command")
                         pending_command = False
 
                 time.sleep(self.config['FlashCardBot']['SleepTime'])
@@ -132,23 +163,15 @@ class FlashCardBot:
                 logger.error("Command error: %s", error)
                 continue
 
+            except StorageManagerException as error:
+                logger.error("Storage Manager error: %s", error)
+                self.telegrambot.send_message(error)
+                continue
+
             except KeyboardInterrupt:
                 logger.error("Detected Keyboard Interrupt. Bye!")
                 self.storage_manager.close_connection()
                 sys.exit(1)
-
-
-def read_config(configfile: str) -> dict:
-    '''
-    Read TOM configuration file and extract fields
-    '''
-
-    try:
-        with open(configfile, 'rb') as config_reader:
-            return tomli.load(config_reader)
-    except FileNotFoundError:
-        logger.error('Configuration file %s not found', configfile)
-        sys.exit(1)
 
 
 def main():  # pragma: no cover
