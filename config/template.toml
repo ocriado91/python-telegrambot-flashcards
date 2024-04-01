@@ -3,3 +3,4 @@
 
 [FlashCardBot]
     Commands = ["new_item", "new_round", "show_stats"]
+    SleepTime = 1
