@@ -21,12 +21,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 pylint pytest coverage
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Install TelegramBot API package from source
+    - name: Install TelegramBot API package from Github repository
       run: |
-        git clone https://github.com/ocriado91/python-telegrambot
-        cd python-telegrambot
-        python3 setup.py sdist bdist_wheel
-        pip3 install dist/telegrambot-*-py3-none-any.whl
+        pip install git+https://github.com/ocriado91/python-telegrambot
     - name: Lint with flake8
       run: |
         # Stop the build if there are Python sintax errors or undefined names
