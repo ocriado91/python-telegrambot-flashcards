@@ -47,7 +47,7 @@ class FlashCardBot:
         self.storage_manager = StorageManager()
 
     def check_command(self,
-                      message: str) -> bool:
+                      message: str) -> str:
         '''
         Check if message is a valid command
 
@@ -55,7 +55,7 @@ class FlashCardBot:
             - message (dictionary): Incoming message to check as valid command
 
         Returns:
-            - bool: True is message is valid command. False otherwise
+            - str: Detected command name into message
         '''
         logger.debug("Checking message %s into %s commands",
                      message,
