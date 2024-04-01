@@ -81,13 +81,22 @@ class FlashCardBot:
         Method to add a new element based on message
         '''
         logger.info("Adding new item %s", message)
+
+        # Extract item type from message
         item_type = list(message.keys())[0]
+
         if item_type == "text":
+            # Extract the target and source fields from text.
+            # NOTE: the text value have "target - source" format.
             text = message[item_type]
             target, source = text.split('-')
+
+            # Insert into StorageManager
             self.storage_manager.insert_item(item_type,
                                              target,
                                              source)
+
+            # Report to user
             msg = f'Successfully added new item {target} - {source}'
             self.telegrambot.send_message(msg)
             logging.info(msg)
