@@ -51,7 +51,8 @@ class FlashCardBot:
         Constructor of FlashCardBot class
         '''
 
-        self.telegrambot = TelegramBot(config['Telegram']['API_KEY'])
+        self.telegrambot = TelegramBot(config['Telegram'])
+        self.valid_commands = config['FlashCardBot']['Commands']
         self.pending_item = False
         self.target = []
         self.max_attemps = max_attempts
@@ -76,35 +77,32 @@ class FlashCardBot:
                             idx_target_unique
                             ON items (target)''')
 
+    def check_command(self,
+                      message: str) -> bool:
+        '''
+        Check if message is a valid command
+
+        Parameters:
+            - message (str): Incoming message to check as valid command
+
+        Returns:
+            - bool: True is message is valid command. False otherwise
+        '''
+        return message in self.valid_commands
+
+
     def polling(self,
-                sleep_time: int = 1):  # pragma: no cover
+                sleep_time: int = 10):  # pragma: no cover
         '''
         Check incoming message from TelegramBot API
         through  a polling mechanism
         '''
 
-        last_message_id = -1
         while True:
-            self.scheduler()
-            message_id = self.telegrambot.extract_message_id()
-
-            # Discard first iteration until new incoming message
-            if last_message_id == -1:
-                last_message_id = message_id
-
-            # Check if new message is available and
-            # if incoming message is different from previous one
-            if message_id:
-                if message_id != last_message_id:
-                    msg_type, msg_data = self.telegrambot.check_update()
-                    if 'text' == msg_type:
-                        message = self.telegrambot.read_message(msg_data)
-                        logger.info('Received message = %s', message)
-                        self.process_message(message)
-                    elif 'photo' == msg_type:
-                        self.process_photo(msg_data)
-                    last_message_id = message_id
-
+            if self.telegrambot.check_new_message():
+                # Extract raw incoming message
+                message = self.telegrambot.check_message_type()
+                logger.info("New message %s", message)
             time.sleep(sleep_time)
 
     def scheduler(self):

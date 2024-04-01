@@ -6,7 +6,9 @@ from flashcard import FlashCardBot, read_config
 @pytest.fixture
 def flashcard_bot():
     config = {'Telegram':
-              {'API_KEY': 'api_key'}}
+              {'API_KEY': 'api_key'},
+              'FlashCardBot':
+              {'Commands': {'command1'}}}
     return FlashCardBot(config, database='test_data.db', max_attempts=3)
 
 
@@ -60,9 +62,7 @@ def test_process_action_unknown(flashcard_bot):
 
 def test_action_new_item(flashcard_bot):
     with patch.object(flashcard_bot.telegrambot,
-                      'send_message') as mock_send_message, \
-        patch.object(flashcard_bot.telegrambot,
-                     'get_chat_id') as _:
+                      'send_message') as mock_send_message:
         # Test adding a new item
         flashcard_bot.action_new_item('word1 - word2')
         # Verify that the item is added to the database
@@ -151,14 +151,12 @@ def test_process_answer_incorrect(flashcard_bot):
 
 
 def test_process_answer_max_attempts(flashcard_bot):
-    with patch.object(flashcard_bot.telegrambot,
-                      'get_chat_id') as _:
-        flashcard_bot.target = [1, '2020', 'word1', 'word2', 0, 0, 0]
-        flashcard_bot.attempt = 2
+    flashcard_bot.target = [1, '2020', 'word1', 'word2', 0, 0, 0]
+    flashcard_bot.attempt = 2
 
-        flashcard_bot.process_answer('wrong_answer')
-        assert flashcard_bot.attempt == 0
-        assert not flashcard_bot.pending_item
+    flashcard_bot.process_answer('wrong_answer')
+    assert flashcard_bot.attempt == 0
+    assert not flashcard_bot.pending_item
 
 
 def test_process_message(flashcard_bot):
@@ -196,6 +194,10 @@ def test_process_message(flashcard_bot):
 def test_read_config():
     config = read_config('config/template.toml')
     assert config['Telegram']['API_KEY'] == "<YOUR_API_KEY>"
+    assert "new_item" in config['FlashCardBot']['Commands']
+    assert "new_round" in config['FlashCardBot']['Commands']
+    assert "show_stats" in config['FlashCardBot']['Commands']
+    assert not "invalid_command" in config['FlashCardBot']['Commands']
 
 @patch('sys.exit')
 def test_read_config_with_invalid_file(mock_exit):
@@ -217,8 +219,7 @@ def test_scheduler(mock_cursor, flashcard_bot):
 
 def test_process_correct_answer(flashcard_bot):
 
-    with patch.object(flashcard_bot.telegrambot, 'get_chat_id') as _,\
-         patch.object(flashcard_bot.telegrambot,
+    with patch.object(flashcard_bot.telegrambot,
                       'send_message') as mock_send_message:
         flashcard_bot.target = [1, '2020', 'word1', 'word2', 0, 160, 0]
         flashcard_bot.process_correct_answer()
@@ -238,8 +239,7 @@ def test_process_correct_answer(flashcard_bot):
 
 def test_process_wrong_answer(flashcard_bot):
 
-    with patch.object(flashcard_bot.telegrambot, 'get_chat_id') as _,\
-         patch.object(flashcard_bot.telegrambot,
+    with patch.object(flashcard_bot.telegrambot,
                       'send_message') as mock_send_message:
         flashcard_bot.target = [1, '2020', 'word1', 'word2', 3, 0, 160]
         flashcard_bot.process_wrong_answer()
@@ -258,9 +258,8 @@ def test_process_wrong_answer(flashcard_bot):
 
 
 def test_action_show_item_photo(flashcard_bot):
-    with patch.object(flashcard_bot.telegrambot, 'get_chat_id') as _,\
-            patch.object(flashcard_bot.telegrambot,
-                         'send_photo') as mock_send_photo:
+    with patch.object(flashcard_bot.telegrambot,
+                      'send_photo') as mock_send_photo:
 
         row = (4, '2023/05/20T12:00:00', 'word1', 'word2', 3,
                0, 0, '2023/04/17t12:00:00', 'photo')
@@ -275,18 +274,16 @@ def test_action_show_item_photo(flashcard_bot):
 def test_process_photo(flashcard_bot):
     data = {'photo': [{'file_id': 33}],
             'caption': 'Fernando Alonso Winner!'}
-    with patch.object(flashcard_bot.telegrambot, 'get_chat_id') as _,\
-            patch.object(flashcard_bot.telegrambot,
-                         'send_message') as mock_send_message:
+    with patch.object(flashcard_bot.telegrambot,
+                      'send_message') as mock_send_message:
         flashcard_bot.process_photo(data)
         mock_send_message.assert_called_with('Successfully added photo')
 
 
 def test_process_photo_no_caption(flashcard_bot):
     data = {'photo': [{'file_id': 14}]}
-    with patch.object(flashcard_bot.telegrambot, 'get_chat_id') as _,\
-            patch.object(flashcard_bot.telegrambot,
-                         'send_message') as mock_send_message:
+    with patch.object(flashcard_bot.telegrambot,
+                      'send_message') as mock_send_message:
         flashcard_bot.process_photo(data)
         mock_send_message.assert_called_with(
             'Please, insert a caption into the photo')
