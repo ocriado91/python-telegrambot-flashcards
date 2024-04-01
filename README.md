@@ -16,7 +16,7 @@ This repository contains a Python Telegram Bot that allows users to create and s
 
 To run the Python Telegram Bot Flashcards, you'll need the following:
 
-- Python 3.6 or higher
+- Python 3.8 or higher
 
 ## Installation
 
