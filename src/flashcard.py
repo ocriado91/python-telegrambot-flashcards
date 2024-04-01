@@ -46,17 +46,15 @@ class FlashCardBot:
     def __init__(self,
                  config: dict,
                  database: str = 'flashcard.db',
-                 max_attempts: int = 3,
                  timeout: int = 20) -> None:
         '''
         Constructor of FlashCardBot class
         '''
 
-        self.telegrambot = TelegramBot(config['Telegram'])
-        self.valid_commands = config['FlashCardBot']['Commands']
+        self.config = config
+        self.telegrambot = TelegramBot(self.config['Telegram'])
         self.pending_item = False
         self.target = []
-        self.max_attemps = max_attempts
         self.attempt = 0
 
         # Create table
@@ -90,7 +88,7 @@ class FlashCardBot:
         Returns:
             - bool: True is message is valid command. False otherwise
         '''
-        return message in self.valid_commands
+        return message in self.config['FlashCardBot']['Commands']
 
 
     def polling(self,
@@ -317,7 +315,8 @@ class FlashCardBot:
                 self.pending_item = True
 
     def process_answer(self,
-                       message: str):
+                       message: str,
+                       max_attempts: int = 3):
         '''
         Check if answer sent via Telegram is correct
         '''
@@ -333,9 +332,9 @@ class FlashCardBot:
             self.telegrambot.send_message(msg)
             logger.info(msg)
             self.process_wrong_answer()
-            if self.attempt >= self.max_attemps:
+            if self.attempt >= max_attempts:
                 self.reset_answer()
-                msg = f'Reached max. number of attemps ({self.max_attemps})'
+                msg = f'Reached max. number of attemps ({max_attempts})'
                 self.telegrambot.send_message(msg)
                 logger.error(msg)
 
