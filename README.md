@@ -1,5 +1,5 @@
 # Python Telegram Bot Flashcards
-![github-action-badge](https://github.com/ocriado91/python-telegrambot-flashcards/actions/workflows/python.yaml/badge.svg)
+[![FlashCardBot Workflow](https://github.com/ocriado91/python-telegrambot-flashcards/actions/workflows/python.yaml/badge.svg)](https://github.com/ocriado91/python-telegrambot-flashcards/actions/workflows/python.yaml)
 [![codecov](https://codecov.io/gh/ocriado91/python-telegrambot-flashcards/branch/main/graph/badge.svg?token=bjdlYmQmOw)](https://codecov.io/gh/ocriado91/python-telegrambot-flashcards)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -16,7 +16,7 @@ This repository contains a Python Telegram Bot that allows users to create and s
 
 To run the Python Telegram Bot Flashcards, you'll need the following:
 
-- Python 3.6 or higher
+- Python 3.8 or higher
 
 ## Installation
 

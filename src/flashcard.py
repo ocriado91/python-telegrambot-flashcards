@@ -46,7 +46,8 @@ class FlashCardBot:
     def __init__(self,
                  config: dict,
                  database: str = 'flashcard.db',
-                 max_attempts: int = 3) -> None:
+                 max_attempts: int = 3,
+                 timeout: int = 20) -> None:
         '''
         Constructor of FlashCardBot class
         '''
@@ -59,7 +60,8 @@ class FlashCardBot:
         self.attempt = 0
 
         # Create table
-        self.conn = sqlite3.connect(database)
+        self.conn = sqlite3.connect(database=database,
+                                    timeout=timeout)
         self.cursor = self.conn.cursor()
         self.cursor.execute('''CREATE TABLE IF NOT EXISTS items
                             (id INTEGER PRIMARY KEY,
