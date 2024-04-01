@@ -1,5 +1,5 @@
 # Python Telegram Bot Flashcards
-![github-action-badge](https://github.com/ocriado91/python-telegrambot-flashcards/actions/workflows/python.yaml/badge.svg)
+[![FlashCardBot Workflow](https://github.com/ocriado91/python-telegrambot-flashcards/actions/workflows/python.yaml/badge.svg)](https://github.com/ocriado91/python-telegrambot-flashcards/actions/workflows/python.yaml)
 [![codecov](https://codecov.io/gh/ocriado91/python-telegrambot-flashcards/branch/main/graph/badge.svg?token=bjdlYmQmOw)](https://codecov.io/gh/ocriado91/python-telegrambot-flashcards)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
