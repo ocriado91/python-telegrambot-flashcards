@@ -5,6 +5,7 @@ Configuration Handler
 
 import logging
 
+from typing import List
 from pydantic import BaseModel
 
 import tomli
@@ -20,7 +21,7 @@ class TelegramBotConfig(BaseModel):
 
 class FlashCardBotConfig(BaseModel):
     ''' FlashCard Bot Configuration Model'''
-    Commands: list[str]
+    Commands: List[str]
     SleepTime: int
 
 class TOMLConfig(BaseModel):
