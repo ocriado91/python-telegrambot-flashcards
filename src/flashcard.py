@@ -3,6 +3,8 @@
 A TelegramBot to learn new words
 '''
 
+from datetime import datetime, timezone
+
 import logging
 import sys
 import time
@@ -141,11 +143,12 @@ class FlashCardBot:
         pending_command = False
         command = ''
 
+        reference_time = datetime.now(timezone.utc)
         # Start polling mechanism
         while True:
             try:
                 # Check if there is a new message
-                if self.telegrambot.check_new_message():
+                if self.telegrambot.check_new_message(reference_time):
                     # Extract raw incoming message
                     message = self.telegrambot.check_message_type()
 
