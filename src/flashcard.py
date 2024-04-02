@@ -122,12 +122,8 @@ class FlashCardBot:
         Method to start a new round
         '''
         logging.info("Starting new round!!")
-
-    def show_stats(self):
-        '''
-        Method to show statistics
-        '''
-        logger.info("Showing statistics!!")
+        result = self.storage_manager.select_random_item()
+        logger.info("Extract item: %s", result)
 
     def polling(self) -> None:  # pragma: no cover
         '''
@@ -139,8 +135,7 @@ class FlashCardBot:
         # function based on incoming command
         switcher = {
             "new_item": self.new_item,
-            "new_round": self.new_round,
-            "show_stats": self.show_stats
+            "new_round": self.new_round
         }
 
         # Initialize variables
@@ -162,7 +157,6 @@ class FlashCardBot:
                         logger.info("Detected command %s", command)
                         msg = "Please, add the new item 😊"
                         self.telegrambot.send_message(msg)
-                        pending_command = True
                     else:
                         logger.info("Trying to process %s with command %s",
                                     message,

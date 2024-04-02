@@ -84,6 +84,19 @@ class StorageManager:
                 "Connection to DB is already closed"
             ) from exception
 
+    def select_random_item(self):
+        '''
+        Extract a random item from database
+        '''
+
+        # Extract the length of the database
+        result = self.cursor.execute('''SELECT * FROM items
+                                     ORDER BY RANDOM() LIMIT 1''').fetchone()
+        logger.debug("Result: %s", result)
+        self.conn.commit()
+
+        return result
+
     def close_connection(self):
         '''
         Close connection to database

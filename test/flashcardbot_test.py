@@ -55,6 +55,15 @@ def test_check_invalid_command(flashcard_bot):
     with pytest.raises(CommandException):
         flashcard_bot.check_command(invalid_command)
 
+def test_new_round(flashcard_bot):
+    '''
+    Test new round method
+    '''
+
+    with patch("flashcard.StorageManager.select_random_item") as mock_storage:
+        flashcard_bot.new_round()
+        mock_storage.assert_called_once()
+
 def test_new_text_item(flashcard_bot):
     '''
     Test to check adding process a new text item
