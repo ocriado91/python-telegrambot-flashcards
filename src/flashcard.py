@@ -43,10 +43,11 @@ class FlashCardBot:
         self.telegrambot = TelegramBot(self.config['Telegram'])
 
         # Init StorageManager
-        self.storage_manager = StorageManager()
+        self.storage_manager = StorageManager(database=self.config['Database'],
+                                              timeout=self.config['Timeout'])
 
     def check_command(self,
-                      message: str) -> str:
+                      message: dict) -> str:
         '''
         Check if message is a valid command
 
@@ -79,43 +80,35 @@ class FlashCardBot:
     def new_item(self, message):
         '''
         Method to add a new element based on message
+
+        Parameters:
+            - message (dictionary): Incoming message to check as valid command
         '''
         logger.info("Adding new item %s", message)
 
         # Extract item type from message
         item_type = list(message.keys())[0]
 
+        target = ''
+        source = ''
         if item_type == "text":
             # Extract the target and source fields from text.
             # NOTE: the text value have "target - source" format.
             text = message[item_type]
             target, source = text.split('-')
+        else:
+            # Use the file_id field as source and caption as target
+            source, target = message[item_type]
 
-            # Insert into StorageManager
-            self.storage_manager.insert_item(item_type,
-                                             target,
-                                             source)
+        # Insert into StorageManager
+        self.storage_manager.insert_item(item_type,
+                                         target,
+                                         source)
 
-            # Report to user
-            msg = f'Successfully added new item {target} - {source}'
-            self.telegrambot.send_message(msg)
-            logging.info(msg)
-        elif item_type == "photo":
-            photo_info = message[item_type]
-            logger.info("Photo info: %s", photo_info)
-        elif item_type == "video":
-            video_info = message[item_type]
-            logger.info("Video info: %s", video_info)
-        elif item_type == "audio":
-            audio_info = message[item_type]
-            logger.info("Audio info: %s", audio_info)
-
-    def process_text(self,
-                     text: str) -> None:
-        '''
-        Process text item
-        '''
-
+        # Report to user
+        msg = f"Successfully added new target {target}"
+        self.telegrambot.send_message(msg)
+        logging.info(msg)
 
     def new_round(self):
         '''
@@ -129,22 +122,28 @@ class FlashCardBot:
         '''
         logger.info("Showing statistics!!")
 
-
-
-    def polling(self):  # pragma: no cover
+    def polling(self) -> None:  # pragma: no cover
         '''
         Check incoming message from TelegramBot API
         through  a polling mechanism
         '''
+
+        # Define a {command: function} to execute a determine
+        # function based on incoming command
         switcher = {
             "new_item": self.new_item,
             "new_round": self.new_round,
             "show_stats": self.show_stats
         }
+
+        # Initialize variables
         pending_command = False
         command = ''
+
+        # Start polling mechanism
         while True:
             try:
+                # Check if there is a new message
                 if self.telegrambot.check_new_message():
                     # Extract raw incoming message
                     message = self.telegrambot.check_message_type()
@@ -158,6 +157,8 @@ class FlashCardBot:
                         logger.info("Trying to process %s with command %s",
                                     message,
                                     command)
+                        # Select the command function in based on
+                        # pending command
                         command_function = switcher.get(command)
                         command_function(message)
 
@@ -193,8 +194,8 @@ def main():  # pragma: no cover
         logger.error("Please execute `python3 flashcard.py <CONFIG>`")
         sys.exit(1)
 
-    # Read configuration file
-    config = Configuration(sys.argv[1]).read()
+    # Read and validate configuration file
+    config = Configuration(sys.argv[1]).validate()
 
     # Built FlashCard Bot object
     bot = FlashCardBot(config)

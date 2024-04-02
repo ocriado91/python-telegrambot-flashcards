@@ -4,7 +4,7 @@ Configuration Handler
 '''
 
 import logging
-
+import pydantic
 from typing import List
 from pydantic import BaseModel
 
@@ -45,20 +45,30 @@ class Configuration:
     '''
     def __init__(self,
                  configuration_file: str):
-        self.configuration_file = configuration_file
-        self.validate()
 
-    def validate(self):
+        self.configuration_file = configuration_file
+
+    def validate(self) -> dict:
         '''
         Validate TOML configuration file using pydantic models
+
+        Returns:
+            - dict: TOML configuration file data
         '''
 
-
+        # Read configuration file data and try to validate it
+        # against pydantic model
         data = self.read()
-        TOMLConfig(**data)
+        try:
+            TOMLConfig(**data)
+        except pydantic.ValidationError as exception:
+            raise ConfigurationException(
+                f"Configuration file validation error: {exception}") \
+                    from exception
+        return data
 
 
-    def read(self) -> dict:
+    def read(self):
         '''
         Read TOML configuration file
         '''

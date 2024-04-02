@@ -4,9 +4,17 @@ from flashcard import FlashCardBot, CommandException
 @pytest.fixture
 def flashcard_bot():
     config = {'Telegram':
-              {'API_KEY': 'api_key'},
+                {
+                    'API_KEY': 'api_key'
+                },
               'FlashCardBot':
-              {'Commands': ['/new_item']}}
+              {
+                    'Commands': ['/new_item'],
+                    'SleepTime': 1,
+                    'Database': 'test_database.db',
+                    'Timeout': 20
+              }
+            }
     return FlashCardBot(config)
 
 
@@ -14,18 +22,39 @@ def test_check_command(flashcard_bot):
     '''
     Test TelegramBot check_command method
     '''
-
     valid_message = {"text": "/new_item"}
     assert "new_item" == flashcard_bot.check_command(valid_message)
+
+def test_check_command_empty_message(flashcard_bot):
+    '''
+    The TelegramBot API package, returns a None in case of non-supported format
+    message
+    '''
 
     empty_message = {}
     with pytest.raises(CommandException):
         flashcard_bot.check_command(empty_message)
 
+def test_check_invalid_type(flashcard_bot):
+    '''
+    Test case of invalid type as command
+    '''
+
     invalid_type = {"video": "funny cat"}
     with pytest.raises(CommandException):
         flashcard_bot.check_command(invalid_type)
 
+def test_check_invalid_command(flashcard_bot):
+    '''
+    Test to check a non-supported command incoming
+    '''
+
     invalid_command = {"text": "invalid_command"}
     with pytest.raises(CommandException):
         flashcard_bot.check_command(invalid_command)
+
+
+
+
+
+

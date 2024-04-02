@@ -1,0 +1,6 @@
+[Telegram]
+    API_KEY = "<YOUR_API_KEY>"
+
+[FlashCardBot]
+    Commands = ["new_item", "new_round", "show_stats"]
+    SleepTime = 1
