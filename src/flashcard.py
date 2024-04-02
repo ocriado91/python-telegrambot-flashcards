@@ -43,8 +43,9 @@ class FlashCardBot:
         self.telegrambot = TelegramBot(self.config['Telegram'])
 
         # Init StorageManager
-        self.storage_manager = StorageManager(database=self.config['Database'],
-                                              timeout=self.config['Timeout'])
+        self.storage_manager = StorageManager(
+            database=self.config['FlashCardBot']['Database'],
+            timeout=self.config['FlashCardBot']['Timeout'])
 
     def check_command(self,
                       message: dict) -> str:

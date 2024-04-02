@@ -4,3 +4,5 @@
 [FlashCardBot]
     Commands = ["new_item", "new_round", "show_stats"]
     SleepTime = "10seconds" # This field must be a number
+    Database = 'test_flashcard.db'
+    Timeout = 20
