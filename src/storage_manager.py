@@ -77,7 +77,12 @@ class StorageManager:
                         item_type, target, source)
         except sqlite3.IntegrityError as exception:
             raise StorageManagerException(
-                f"Items {target} - {source} already stored") from exception
+                f"Target {target} already stored") from exception
+
+        except sqlite3.ProgrammingError as exception:
+            raise StorageManagerException(
+                "Connection to DB is already closed"
+            ) from exception
 
     def close_connection(self):
         '''
