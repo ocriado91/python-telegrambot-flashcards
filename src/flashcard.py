@@ -9,7 +9,7 @@ import time
 
 from telegrambot import TelegramBot
 
-from configuration import Configuration
+from configuration import Configuration, ConfigurationException
 from storage_manager import StorageManager, StorageManagerException
 
 logging.basicConfig(
@@ -195,8 +195,12 @@ def main():  # pragma: no cover
         logger.error("Please execute `python3 flashcard.py <CONFIG>`")
         sys.exit(1)
 
-    # Read and validate configuration file
-    config = Configuration(sys.argv[1]).validate()
+    # Validate configuration file and extract configuration data
+    try:
+        config = Configuration(sys.argv[1]).validate()
+    except ConfigurationException as exception:
+        logger.error("Configuration error: %s", exception)
+        sys.exit(1)
 
     # Built FlashCard Bot object
     bot = FlashCardBot(config)
