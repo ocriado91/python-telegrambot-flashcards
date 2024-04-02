@@ -85,7 +85,7 @@ class FlashCardBot:
         Method to add a new element based on message
 
         Parameters:
-            - message (dictionary): Incoming message to check as valid command
+            - message (dictionary): Incoming message with item data
         '''
         logger.info("Adding new item %s", message)
 
@@ -99,6 +99,10 @@ class FlashCardBot:
             # NOTE: the text value have "target - source" format.
             text = message[item_type]
             target, source = text.split('-')
+
+            # Remove leading and trailing whitespaces
+            target = target.strip()
+            source = source.strip()
         else:
             # Use the file_id field as source and caption as target
             source, target = message[item_type]

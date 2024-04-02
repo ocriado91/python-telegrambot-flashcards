@@ -1,6 +1,8 @@
 import pytest
 from flashcard import FlashCardBot, CommandException
 
+from unittest.mock import patch
+
 @pytest.fixture
 def flashcard_bot():
     config = {'Telegram':
@@ -52,6 +54,31 @@ def test_check_invalid_command(flashcard_bot):
     invalid_command = {"text": "invalid_command"}
     with pytest.raises(CommandException):
         flashcard_bot.check_command(invalid_command)
+
+def test_new_text_item(flashcard_bot):
+    '''
+    Test to check adding process a new text item
+    '''
+    message = {"text": "Hello - Hola"}
+
+    with patch("flashcard.StorageManager.insert_item") as mock_new_item:
+        flashcard_bot.new_item(message)
+        mock_new_item.assert_called_once_with("text",
+                                              "Hello",
+                                              "Hola")
+
+def test_new_photo_item(flashcard_bot):
+    '''
+    Test to check adding process a new text item
+    '''
+    message = {"photo": ("Cat", "2wrgvweghrv4")}
+
+    with patch("flashcard.StorageManager.insert_item") as mock_new_item:
+        flashcard_bot.new_item(message)
+        mock_new_item.assert_called_once_with("photo",
+                                              "2wrgvweghrv4",
+                                              "Cat")
+
 
 
 
