@@ -156,6 +156,8 @@ class FlashCardBot:
                     if not pending_command:
                         command = self.check_command(message)
                         logger.info("Detected command %s", command)
+                        msg = "Please, add the new item 😊"
+                        self.telegrambot.send_message(msg)
                         pending_command = True
                     else:
                         logger.info("Trying to process %s with command %s",
@@ -168,7 +170,7 @@ class FlashCardBot:
 
                         # Incoming message processed. Time to flush pending
                         # command flag
-                        logger.info("Successfully processed command")
+                        logger.info("💪 Successfully processed command")
                         pending_command = False
 
                 time.sleep(self.config['FlashCardBot']['SleepTime'])
@@ -180,6 +182,12 @@ class FlashCardBot:
             except StorageManagerException as error:
                 logger.error("Storage Manager error: %s", error)
                 self.telegrambot.send_message(error)
+                continue
+
+            except ValueError as error:
+                logger.error("ValueError: %s", error)
+                msg = "🧐 Something went wrong. Please try again"
+                self.telegrambot.send_message(msg)
                 continue
 
             except KeyboardInterrupt:
