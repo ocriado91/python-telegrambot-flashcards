@@ -4,8 +4,9 @@ Configuration Handler
 '''
 
 import logging
-import pydantic
 from typing import List
+
+import pydantic
 from pydantic import BaseModel
 
 import tomli
