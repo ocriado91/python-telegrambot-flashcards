@@ -131,6 +131,38 @@ class FlashCardBot:
             self.telegrambot.send_message("Wrong answer 🥲")
         return match
 
+    def processing_command(self, message: str) -> str:
+        '''
+        Processing command in based on message
+
+        Parameters:
+            - message (str): Incoming message to decode command
+
+        Returns:
+            str: Detected command
+        '''
+
+        send_quiz_switcher = {
+            "text": self.telegrambot.send_message,
+            "photo": self.telegrambot.send_photo,
+            "audio": self.telegrambot.send_audio,
+            "video": self.telegrambot.send_video
+        }
+        command = self.check_command(message)
+
+        if command == "new_item":
+            msg = "Please, add the new item 😊"
+            self.telegrambot.send_message(msg)
+        elif command == "new_round":
+            quiz, item_type = \
+                self.storage_manager.select_random_item()
+
+            # Select the properly function to send the quiz
+            # to the user depending on item type
+            send_quiz_switcher.get(item_type)(quiz)
+
+        return command
+
     def polling(self) -> None:  # pragma: no cover
         '''
         Check incoming message from TelegramBot API
@@ -145,11 +177,10 @@ class FlashCardBot:
         }
 
         # Initialize variables
-        pending_command = False
         command = ''
         attempt_count = 0
-        max_attemps = self.config['FlashCardBot']['MaxAttempts']
         reference_time = datetime.now(timezone.utc)
+        max_attempts = self.config['FlashCardBot']['MaxAttempts']
 
         # Start polling mechanism
         while True:
@@ -160,46 +191,30 @@ class FlashCardBot:
                     message = self.telegrambot.check_message_type()
 
                     # None pending command, waiting to receive a new one
-                    if not pending_command:
-                        command = self.check_command(message)
-                        logger.info("Detected command %s", command)
+                    if not command:
+                        command = self.processing_command(message)
+                        continue
 
-                        if command == "new_item":
-                            msg = "Please, add the new item 😊"
+                    # Select the command function in based on pending command
+                    result = switcher.get(command)(message)
+                    if not result:
+                        if attempt_count == max_attempts:
+                            msg = "Reached max. attempts."
+                            logger.error(msg)
                             self.telegrambot.send_message(msg)
-                            pending_command = True
-                        elif command == "new_round":
-                            quiz = self.storage_manager.select_random_item()
-                            logger.info("Sending %s as quiz", quiz)
-                            self.telegrambot.send_message(quiz)
-                            pending_command = True
-                    else:
-                        logger.info("Trying to process %s with command %s",
-                                    message,
-                                    command)
-                        # Select the command function in based on
-                        # pending command
-                        command_function = switcher.get(command)
-                        result = command_function(message)
-                        if not result:
-                            if attempt_count == max_attemps:
-                                msg = "Reached max. attempts."
-                                logger.error(msg)
-                                self.telegrambot.send_message(msg)
-                                # Reset pending command flag and attempt counter
-                                pending_command = False
-                                attempt_count = 0
-                                continue
-                            attempt_count += 1
-                            logger.warning("Number of attempts: %s",
-                                           attempt_count)
+                            # Reset command and attempt_count values
+                            command = ''
+                            attempt_count = 0
                             continue
 
-                        # Incoming message processed. Time to flush pending
-                        # command flag
-                        logger.info("💪 Successfully processed command")
-                        pending_command = False
-                        attempt_count = 0
+                        attempt_count += 1
+                        logger.warning("Number of attempts: %s",
+                                        attempt_count)
+                        continue
+
+                    # Incoming message processed
+                    command = ''
+                    attempt_count = 0
 
                 time.sleep(self.config['FlashCardBot']['SleepTime'])
 

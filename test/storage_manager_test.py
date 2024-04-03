@@ -46,8 +46,9 @@ def test_select_random_item():
     storage_manager.insert_item("text", "testA", "testB")
 
     # Try to extract quiz
-    quiz = storage_manager.select_random_item()
+    quiz, item_type = storage_manager.select_random_item()
     assert quiz == "testB"
+    assert item_type == "text"
 
 def test_check_quiz_item():
     '''

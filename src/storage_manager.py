@@ -90,18 +90,18 @@ class StorageManager:
 
     def _update_db_numeric_field(self,
                                 field: str,
-                                id: int) -> None:
+                                item_id: int) -> None:
         '''
         Update a numeric field into database
 
         Parameters
          - field (str): Numeric field to be incremented
-         - id (int): ID of item to be modified
+         - item_id (int): ID of item to be modified
         '''
 
         query = f'''UPDATE items
                     set {field} = {field} + 1
-                    WHERE id = {id}'''
+                    WHERE id = {item_id}'''
         self.cursor.execute(query)
         self.conn.commit()
         logger.info("Successfully updated %s", field)
@@ -111,20 +111,21 @@ class StorageManager:
         Extract a random item from database
 
         Returns:
-            - str: The quiz string of randomly selected item
+            - item: The quiz string of randomly selected item
         '''
 
         # Extract the length of the database
-        row = self.cursor.execute('''SELECT * FROM items
+        self.item = self.cursor.execute('''SELECT * FROM items
                                   ORDER BY RANDOM() LIMIT 1''').fetchone()
         self.conn.commit()
 
-        if not row:
+        if not self.item:
             raise StorageManagerException("None item detected into database")
-        logger.info("Result: %s", row)
-        self.item = row
+        logger.info("Result: %s", self.item)
 
-        return row[3]
+        quiz = self.item[3]
+        item_type = self.item[6]
+        return quiz, item_type
 
     def check_quiz_item(self,
                         attempt: str) -> bool:
