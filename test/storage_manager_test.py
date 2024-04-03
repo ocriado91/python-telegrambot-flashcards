@@ -93,3 +93,4 @@ def remove_test_db():
     yield
     os.remove("test_flashcard.db")
     os.remove("test_flashcard_random.db")
+    os.remove("test_flashcard_empty.db")
