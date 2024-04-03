@@ -2,7 +2,7 @@
     API_KEY = "<YOUR_API_KEY>"
 
 [FlashCardBot]
-    Commands = ["new_item", "new_round", "show_stats"]
+    Commands = ["new_item", "new_round"]
     SleepTime = 1
     Database = 'test_database.db'
     Timeout = 20

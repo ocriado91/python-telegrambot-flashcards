@@ -60,8 +60,9 @@ def test_new_round(flashcard_bot):
     Test new round method
     '''
 
-    with patch("flashcard.StorageManager.select_random_item") as mock_storage:
-        flashcard_bot.new_round()
+    message = {"text": "asdaerwer"}
+    with patch("flashcard.StorageManager.check_quiz_item") as mock_storage:
+        flashcard_bot.new_round(message)
         mock_storage.assert_called_once()
 
 def test_new_text_item(flashcard_bot):
@@ -87,10 +88,4 @@ def test_new_photo_item(flashcard_bot):
         mock_new_item.assert_called_once_with("photo",
                                               "2wrgvweghrv4",
                                               "Cat")
-
-
-
-
-
-
 

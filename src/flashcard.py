@@ -92,38 +92,44 @@ class FlashCardBot:
         # Extract item type from message
         item_type = list(message.keys())[0]
 
-        target = ''
-        source = ''
+        answer = ''
+        quiz = ''
         if item_type == "text":
-            # Extract the target and source fields from text.
-            # NOTE: the text value have "target - source" format.
+            # Extract the answer and quiz fields from text.
+            # NOTE: the text value have "answer - quiz" format.
             text = message[item_type]
-            target, source = text.split('-')
+            answer, quiz = text.split('-')
 
             # Remove leading and trailing whitespaces
-            target = target.strip()
-            source = source.strip()
+            answer = answer.strip()
+            quiz = quiz.strip()
         else:
-            # Use the file_id field as source and caption as target
-            source, target = message[item_type]
+            # Use the file_id field as quiz and caption as answer
+            quiz, answer = message[item_type]
 
         # Insert into StorageManager
         self.storage_manager.insert_item(item_type,
-                                         target,
-                                         source)
+                                         answer,
+                                         quiz)
 
         # Report to user
-        msg = f"Successfully added new target {target}"
+        msg = f"Successfully added new answer {answer}"
         self.telegrambot.send_message(msg)
         logging.info(msg)
+        return True
 
-    def new_round(self):
+    def new_round(self, message):
         '''
         Method to start a new round
         '''
-        logging.info("Starting new round!!")
-        result = self.storage_manager.select_random_item()
-        logger.info("Extract item: %s", result)
+        attempt = message["text"]
+        match = self.storage_manager.check_quiz_item(attempt)
+        logger.info("Matched? %s", match)
+        if match:
+            self.telegrambot.send_message("Correct!🎉")
+        else:
+            self.telegrambot.send_message("Wrong answer 🥲")
+        return match
 
     def polling(self) -> None:  # pragma: no cover
         '''
@@ -141,6 +147,8 @@ class FlashCardBot:
         # Initialize variables
         pending_command = False
         command = ''
+        attempt_count = 0
+        max_attemps = self.config['FlashCardBot']['MaxAttempts']
 
         reference_time = datetime.now(timezone.utc)
         # Start polling mechanism
@@ -155,8 +163,26 @@ class FlashCardBot:
                     if not pending_command:
                         command = self.check_command(message)
                         logger.info("Detected command %s", command)
-                        msg = "Please, add the new item 😊"
-                        self.telegrambot.send_message(msg)
+
+                        if command == "new_item":
+                            msg = "Please, add the new item 😊"
+                            self.telegrambot.send_message(msg)
+                            pending_command = True
+                        elif command == "new_round":
+                            item = self.storage_manager.select_random_item()
+                            if not item:
+                                msg = "None item detected in database"
+                                logger.error(msg)
+                                self.telegrambot.send_message(msg)
+                            else:
+                                quiz = item[3]
+                                logger.info("Sending %s as quiz", quiz)
+                                self.telegrambot.send_message(quiz)
+                                pending_command = True
+                        else:
+                            msg = "Command not found"
+                            logger.error(msg)
+                            self.telegrambot.send_message(msg)
                     else:
                         logger.info("Trying to process %s with command %s",
                                     message,
@@ -164,17 +190,31 @@ class FlashCardBot:
                         # Select the command function in based on
                         # pending command
                         command_function = switcher.get(command)
-                        command_function(message)
+                        result = command_function(message)
+                        if not result:
+                            if attempt_count == max_attemps:
+                                msg = "Reached max. attempts."
+                                logger.error(msg)
+                                self.telegrambot.send_message(msg)
+                                # Reset pending command flag and attempt counter
+                                pending_command = False
+                                attempt_count = 0
+                                continue
+                            attempt_count += 1
+                            logger.warn("Number of attempts: %s", attempt_count)
+                            continue
 
                         # Incoming message processed. Time to flush pending
                         # command flag
                         logger.info("💪 Successfully processed command")
                         pending_command = False
+                        attempt_count = 0
 
                 time.sleep(self.config['FlashCardBot']['SleepTime'])
 
             except CommandException as error:
                 logger.error("Command error: %s", error)
+                self.telegrambot.send_message("error")
                 continue
 
             except StorageManagerException as error:

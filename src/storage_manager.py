@@ -30,6 +30,10 @@ class StorageManager:
     def __init__(self,
                  database: str = 'flashcard.db',
                  timeout: int = 20) -> None:
+
+        # Store selected item
+        self.item = ()
+
         # Create table
         self.conn = sqlite3.connect(database=database,
                                     timeout=timeout)
@@ -37,52 +41,70 @@ class StorageManager:
         self.cursor.execute('''CREATE TABLE IF NOT EXISTS items
                             (id INTEGER PRIMARY KEY,
                             inserted_date TEXT,
-                            target TEXT,
-                            source TEXT,
+                            answer TEXT,
+                            quiz TEXT,
                             answer_correct_count INTEGER,
                             answer_wrong_count INTEGER,
                             item_type TEXT)''')
 
-        # Add unique constraint to the target column
+        # Add unique constraint to the answer column
         self.cursor.execute('''CREATE UNIQUE INDEX IF NOT EXISTS
-                            idx_target_unique
-                            ON items (target)''')
+                            idx_answer_unique
+                            ON items (answer)''')
 
     def insert_item(self,
                     item_type: str,
-                    target: str,
-                    source: str) -> None:
+                    answer: str,
+                    quiz: str) -> None:
         '''
         Add a new item to the database
 
         Parameters:
             - item_type (str): Type of item (text, photo, audio or video)
-            - target (str): Field that will be shown into a round
-            - source (str): Field that must be to guessed into a round
+            - answer (str): Field that will be shown into a round
+            - quiz (str): Field that must be to guessed into a round
         '''
         try:
             now = datetime.strftime(datetime.now(), DATE_FMT)
             self.cursor.execute('''INSERT INTO items (
                                     inserted_date,
-                                    target,
-                                    source,
+                                    answer,
+                                    quiz,
                                     answer_correct_count,
                                     answer_wrong_count,
                                     item_type)
                                     VALUES (?, ?, ?, ?, ?, ?)''',
-                                    (now, target, source,
+                                    (now, answer, quiz,
                                     0, 0, item_type))
             self.conn.commit()
             logger.info("Successfully store new item %s: %s - %s",
-                        item_type, target, source)
+                        item_type, answer, quiz)
         except sqlite3.IntegrityError as exception:
-            raise StorageManagerException(
-                f"Target {target} already stored") from exception
+            msg = f"Already a item with answer {answer} has been created."
+            raise StorageManagerException(msg) from exception
 
         except sqlite3.ProgrammingError as exception:
             raise StorageManagerException(
                 "Connection to DB is already closed"
             ) from exception
+
+    def _update_db_numeric_field(self,
+                                field: str,
+                                id: int) -> None:
+        '''
+        Update a numeric field into database
+
+        Parameters
+         - field (str): Numeric field to be incremented
+         - id (int): ID of item to be modified
+        '''
+
+        query = f'''UPDATE items
+                    set {field} = {field} + 1
+                    WHERE id = {id}'''
+        self.cursor.execute(query)
+        self.conn.commit()
+        logger.info("Successfully updated %s", field)
 
     def select_random_item(self):
         '''
@@ -90,12 +112,32 @@ class StorageManager:
         '''
 
         # Extract the length of the database
-        result = self.cursor.execute('''SELECT * FROM items
-                                     ORDER BY RANDOM() LIMIT 1''').fetchone()
-        logger.debug("Result: %s", result)
+        self.item = self.cursor.execute('''SELECT * FROM items
+                                        ORDER BY RANDOM() LIMIT 1''').fetchone()
+        logger.info("Result: %s", self.item)
         self.conn.commit()
 
-        return result
+        return self.item
+
+    def check_quiz_item(self,
+                        attempt: str) -> bool:
+        '''
+        Check if attempt string is into database
+
+        Parameters
+            - attempt (str): String to check into database
+
+        Returns
+            -  bool: True is attempt string is into database. False otherwise
+        '''
+
+        query = '''SELECT EXISTS(SELECT 1 FROM items WHERE answer = ?)'''
+        matched = self.cursor.execute(query, (attempt,)).fetchone()[0]
+        if matched:
+            self._update_db_numeric_field("answer_correct_count", self.item[0])
+        else:
+            self._update_db_numeric_field("answer_wrong_count", self.item[0])
+        return matched
 
     def close_connection(self):
         '''
