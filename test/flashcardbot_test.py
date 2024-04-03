@@ -60,10 +60,20 @@ def test_new_round(flashcard_bot):
     Test new round method
     '''
 
-    message = {"text": "asdaerwer"}
+    message = {"text": "testA"}
     with patch("flashcard.StorageManager.check_quiz_item") as mock_storage:
-        flashcard_bot.new_round(message)
-        mock_storage.assert_called_once()
+        mock_storage.return_value = True
+        assert flashcard_bot.new_round(message)
+
+def test_new_round_wrong(flashcard_bot):
+    '''
+    Test new round method
+    '''
+
+    message = {"text": "testA"}
+    with patch("flashcard.StorageManager.check_quiz_item") as mock_storage:
+        mock_storage.return_value = False
+        assert not flashcard_bot.new_round(message)
 
 def test_new_text_item(flashcard_bot):
     '''

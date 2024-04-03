@@ -106,18 +106,25 @@ class StorageManager:
         self.conn.commit()
         logger.info("Successfully updated %s", field)
 
-    def select_random_item(self):
+    def select_random_item(self) -> str:
         '''
         Extract a random item from database
+
+        Returns:
+            - str: The quiz string of randomly selected item
         '''
 
         # Extract the length of the database
-        self.item = self.cursor.execute('''SELECT * FROM items
-                                        ORDER BY RANDOM() LIMIT 1''').fetchone()
-        logger.info("Result: %s", self.item)
+        row = self.cursor.execute('''SELECT * FROM items
+                                  ORDER BY RANDOM() LIMIT 1''').fetchone()
         self.conn.commit()
 
-        return self.item
+        if not row:
+            raise StorageManagerException("None item detected into database")
+        logger.info("Result: %s", row)
+        self.item = row
+
+        return row[3]
 
     def check_quiz_item(self,
                         attempt: str) -> bool:

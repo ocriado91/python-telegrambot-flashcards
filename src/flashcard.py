@@ -137,7 +137,7 @@ class FlashCardBot:
         through  a polling mechanism
         '''
 
-        # Define a {command: function} to execute a determine
+        # Define a {command: function} dictionary to execute a determine
         # function based on incoming command
         switcher = {
             "new_item": self.new_item,
@@ -149,8 +149,8 @@ class FlashCardBot:
         command = ''
         attempt_count = 0
         max_attemps = self.config['FlashCardBot']['MaxAttempts']
-
         reference_time = datetime.now(timezone.utc)
+
         # Start polling mechanism
         while True:
             try:
@@ -169,20 +169,10 @@ class FlashCardBot:
                             self.telegrambot.send_message(msg)
                             pending_command = True
                         elif command == "new_round":
-                            item = self.storage_manager.select_random_item()
-                            if not item:
-                                msg = "None item detected in database"
-                                logger.error(msg)
-                                self.telegrambot.send_message(msg)
-                            else:
-                                quiz = item[3]
-                                logger.info("Sending %s as quiz", quiz)
-                                self.telegrambot.send_message(quiz)
-                                pending_command = True
-                        else:
-                            msg = "Command not found"
-                            logger.error(msg)
-                            self.telegrambot.send_message(msg)
+                            quiz = self.storage_manager.select_random_item()
+                            logger.info("Sending %s as quiz", quiz)
+                            self.telegrambot.send_message(quiz)
+                            pending_command = True
                     else:
                         logger.info("Trying to process %s with command %s",
                                     message,
@@ -201,7 +191,8 @@ class FlashCardBot:
                                 attempt_count = 0
                                 continue
                             attempt_count += 1
-                            logger.warn("Number of attempts: %s", attempt_count)
+                            logger.warning("Number of attempts: %s",
+                                           attempt_count)
                             continue
 
                         # Incoming message processed. Time to flush pending
@@ -214,7 +205,7 @@ class FlashCardBot:
 
             except CommandException as error:
                 logger.error("Command error: %s", error)
-                self.telegrambot.send_message("error")
+                self.telegrambot.send_message(error)
                 continue
 
             except StorageManagerException as error:
