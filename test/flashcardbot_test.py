@@ -1,3 +1,4 @@
+import os
 import pytest
 from flashcard import FlashCardBot, CommandException
 
@@ -121,3 +122,12 @@ def test_processing_command_new_round(flashcard_bot):
     command_message = {"text": "/new_round"}
     command = flashcard_bot.processing_command(command_message)
     assert command == "new_round"
+
+# Remove test database after execution
+@pytest.fixture(scope='session', autouse=True)
+def remove_test_db():
+    '''
+    Remove database after execute tests
+    '''
+    yield
+    os.remove("test_flashcard.db")
