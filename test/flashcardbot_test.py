@@ -113,6 +113,11 @@ def test_processing_command_new_round(flashcard_bot):
     Test new_round command processing functionality
     '''
 
-    message = {"text": "/new_round"}
-    command = flashcard_bot.processing_command(message)
+    # Insert a dummy item to database
+    message = {"text": "Hello - Hola"}
+    flashcard_bot.new_item(message)
+
+    # Check new_round command processing
+    command_message = {"text": "/new_round"}
+    command = flashcard_bot.processing_command(command_message)
     assert command == "new_round"
