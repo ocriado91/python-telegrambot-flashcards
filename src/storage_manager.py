@@ -140,12 +140,15 @@ class StorageManager:
         '''
 
         query = '''SELECT EXISTS(SELECT 1 FROM items WHERE answer = ?)'''
-        matched = self.cursor.execute(query, (attempt,)).fetchone()[0]
-        if matched:
-            self._update_db_numeric_field("answer_correct_count", self.item[0])
-        else:
-            self._update_db_numeric_field("answer_wrong_count", self.item[0])
-        return matched
+        is_matched = self.cursor.execute(query, (attempt,)).fetchone()[0]
+
+        # Update attempt counters
+        field = "answer_wrong_count"
+        if is_matched:
+            field = "answer_correct_count"
+        self._update_db_numeric_field(field, self.item[0])
+
+        return is_matched
 
     def close_connection(self):
         '''

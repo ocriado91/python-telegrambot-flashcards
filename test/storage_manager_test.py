@@ -56,7 +56,10 @@ def test_check_quiz_item():
     '''
 
     # Initialize Storage Manager
-    storage_manager = StorageManager(database="test_flashcard.db")
+    storage_manager = StorageManager(database="test_flashcard_quiz.db")
+
+    # Insert a new item
+    storage_manager.insert_item("text", "test1", "test2")
 
     # Select random item
     storage_manager.select_random_item()
@@ -95,3 +98,4 @@ def remove_test_db():
     os.remove("test_flashcard.db")
     os.remove("test_flashcard_random.db")
     os.remove("test_flashcard_empty.db")
+    os.remove("test_flashcard_quiz.db")
