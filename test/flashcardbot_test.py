@@ -1,3 +1,4 @@
+import os
 import pytest
 from flashcard import FlashCardBot, CommandException
 
@@ -11,7 +12,7 @@ def flashcard_bot():
                 },
               'FlashCardBot':
               {
-                    'Commands': ['/new_item'],
+                    'Commands': ['/new_item', '/new_round'],
                     'SleepTime': 1,
                     'Database': 'test_database.db',
                     'Timeout': 20
@@ -60,9 +61,20 @@ def test_new_round(flashcard_bot):
     Test new round method
     '''
 
-    with patch("flashcard.StorageManager.select_random_item") as mock_storage:
-        flashcard_bot.new_round()
-        mock_storage.assert_called_once()
+    message = {"text": "testA"}
+    with patch("flashcard.StorageManager.check_quiz_item") as mock_storage:
+        mock_storage.return_value = True
+        assert flashcard_bot.new_round(message)
+
+def test_new_round_wrong(flashcard_bot):
+    '''
+    Test new round method
+    '''
+
+    message = {"text": "testA"}
+    with patch("flashcard.StorageManager.check_quiz_item") as mock_storage:
+        mock_storage.return_value = False
+        assert not flashcard_bot.new_round(message)
 
 def test_new_text_item(flashcard_bot):
     '''
@@ -88,9 +100,25 @@ def test_new_photo_item(flashcard_bot):
                                               "2wrgvweghrv4",
                                               "Cat")
 
+def test_processing_command_new_item(flashcard_bot):
+    '''
+    Test new_item command processing functionality
+    '''
 
+    message = {"text": "/new_item"}
+    command = flashcard_bot.processing_command(message)
+    assert command == "new_item"
 
+def test_processing_command_new_round(flashcard_bot):
+    '''
+    Test new_round command processing functionality
+    '''
 
+    # Insert a dummy item to database
+    message = {"text": "Hello - Hola"}
+    flashcard_bot.new_item(message)
 
-
-
+    # Check new_round command processing
+    command_message = {"text": "/new_round"}
+    command = flashcard_bot.processing_command(command_message)
+    assert command == "new_round"

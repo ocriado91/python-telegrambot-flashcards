@@ -24,6 +24,9 @@ class FlashCardBotConfig(BaseModel):
     ''' FlashCard Bot Configuration Model'''
     Commands: List[str]
     SleepTime: int
+    Database: str
+    Timeout: int
+    MaxAttempts: int
 
 class TOMLConfig(BaseModel):
     ''' Configuration model '''
