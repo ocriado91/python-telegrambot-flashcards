@@ -172,9 +172,11 @@ def test_import_csv_file_item_already_stored(flashcard_bot):
 
 # Remove test database after execution
 @pytest.fixture(scope='session', autouse=True)
-def remove_test_db():
+def setup_tests():
     '''
-    Remove database after execute tests
+    Create a download folder before test execution and remove the database
+    when the test ends.
     '''
+    os.mkdir("download/")
     yield
     os.remove("test_database.db")
