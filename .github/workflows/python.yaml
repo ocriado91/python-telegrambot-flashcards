@@ -10,7 +10,7 @@ jobs:
       matrix:
         # According to https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json
         # supported Python versions from ARM64 architecture are from 3.10.11 onwards.
-        python-version: ['3.12']
+        python-version: ['3.11.2']
         # python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
 
     steps:
