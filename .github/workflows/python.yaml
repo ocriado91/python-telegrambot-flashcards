@@ -23,7 +23,7 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Install TelegramBot API package from Github repository
       run: |
-        pip install git+https://github.com/ocriado91/python-telegrambot
+        pip install git+https://github.com/ocriado91/python-telegrambot --force-reinstall
     - name: Lint with ruff
       run: |
         ruff check .
