@@ -3,9 +3,9 @@ name: FlashCardBot Workflow
 on: [push]
 
 jobs:
-  build:
+  unit-testing:
 
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     strategy:
       matrix:
         python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
