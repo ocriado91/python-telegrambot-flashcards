@@ -3,9 +3,9 @@ name: FlashCardBot Workflow
 on: [push]
 
 jobs:
-  build:
+  unit-testing:
 
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     strategy:
       matrix:
         python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
@@ -19,20 +19,14 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 pylint pytest coverage
+        pip install ruff pytest coverage
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Install TelegramBot API package from Github repository
       run: |
-        pip install git+https://github.com/ocriado91/python-telegrambot
-    - name: Lint with flake8
+        pip install git+https://github.com/ocriado91/python-telegrambot --force-reinstall
+    - name: Lint with ruff
       run: |
-        # Stop the build if there are Python sintax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # Exit-zero treats all errors as warnings
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Lint with pylint
-      run: |
-        pylint src/
+        ruff check .
     - name: Test with pytest and codecov
       run: |
         export PYTHONPATH=src/
