@@ -6,6 +6,7 @@ A TelegramBot to learn new words
 from datetime import datetime, timezone
 
 import logging
+import os
 import sys
 import time
 
@@ -80,7 +81,59 @@ class FlashCardBot:
 
         return command.replace('/', '')
 
-    def new_item(self, message):
+    def import_csv_file(self,
+                        file_id: str) -> bool:
+        '''
+        Import a CSV file and insert its contents
+        into the database
+
+        Parameters:
+            -  file_id (str): Telegram Bot API File ID of the file to be
+                downloaded
+
+        Returns:
+            - bool: Flag to report method status
+        '''
+
+        download_path = self.config["FlashCardBot"]["DownloadPath"]
+
+        # Try to download incoming file
+        self.telegrambot.download_file(
+            file_id,
+            download_path
+        )
+
+        download_files = os.listdir(download_path)
+        if not download_files:
+            logger.warning("None detected file into %s", download_path)
+            return False
+
+        # Concatenate path and read downloaded file
+        download_file = os.path.join(download_path, download_files[0])
+        logger.info(download_file)
+        with open(download_file, encoding='utf-8') as file_obj:
+            lines = file_obj.readlines()
+
+        # Remove break line characters
+        lines = [line.replace('\n', '') for line in lines]
+
+        # Insert all items into database
+        for line in lines:
+            answer, quiz = line.split(',')
+            try:
+                self.storage_manager.insert_item("text",
+                                                answer,
+                                                quiz)
+            except StorageManagerException:
+                logger.warning("Item %s already stored", answer)
+                continue
+
+        # Remove downloaded file
+        os.remove(download_file)
+
+        return True
+
+    def new_item(self, message) -> bool:
         '''
         Method to add a new element based on message
 
@@ -103,6 +156,10 @@ class FlashCardBot:
             # Remove leading and trailing whitespaces
             answer = answer.strip()
             quiz = quiz.strip()
+        elif item_type == "document":
+            file_id = message[item_type]
+            if not self.import_csv_file(file_id):
+                return False
         else:
             # Use the file_id field as quiz and caption as answer
             quiz, answer = message[item_type]

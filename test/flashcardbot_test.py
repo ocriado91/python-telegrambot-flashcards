@@ -15,7 +15,9 @@ def flashcard_bot():
                     'Commands': ['/new_item', '/new_round'],
                     'SleepTime': 1,
                     'Database': 'test_database.db',
-                    'Timeout': 20
+                    'Timeout': 20,
+                    'MaxAttempts': 3,
+                    'DownloadPath': 'download/'
               }
             }
     return FlashCardBot(config)
@@ -122,3 +124,59 @@ def test_processing_command_new_round(flashcard_bot):
     command_message = {"text": "/new_round"}
     command = flashcard_bot.processing_command(command_message)
     assert command == "new_round"
+
+def test_new_item_document(flashcard_bot):
+    '''
+    Test adding new item import CSV file. The method returns False due to
+    none existing file into download folder.
+    '''
+
+    command_message = {"document": "1234ABCD"}
+    assert not flashcard_bot.new_item(command_message)
+
+def test_import_csv_file(flashcard_bot):
+    '''
+    Test import CSV file functionality
+    '''
+
+    # Create a CSV file into download folder and write a single row
+    with open("download/test_data.csv", "w", encoding="utf-8") as file_obj:
+        file_obj.write("Cat,Gato")
+
+    with patch("telegrambot.TelegramBot.download_file") as mock_download:
+        assert flashcard_bot.import_csv_file(file_id="1234ABCD")
+        mock_download.assert_called_once()
+
+def test_import_csv_file_empty_files(flashcard_bot):
+    '''
+    Test import a non-existing CSV file
+    '''
+
+    with patch("telegrambot.TelegramBot.download_file") as mock_download:
+        assert not flashcard_bot.import_csv_file(file_id="1234ABCD")
+        mock_download.assert_called_once()
+
+def test_import_csv_file_item_already_stored(flashcard_bot):
+    '''
+    Test import CSV file functionality trying to import the same item twice
+    '''
+
+    # Create a CSV file into download folder and write a single row
+    with open("download/test_data.csv", "w", encoding="utf-8") as file_obj:
+        file_obj.write("Cat,Gato\n")
+        file_obj.write("Cat,Gato")
+
+    with patch("telegrambot.TelegramBot.download_file") as mock_download:
+        assert flashcard_bot.import_csv_file(file_id="1234ABCD")
+        mock_download.assert_called_once()
+
+# Remove test database after execution
+@pytest.fixture(scope='session', autouse=True)
+def setup_tests():
+    '''
+    Create a download folder before test execution and remove the database
+    when the test ends.
+    '''
+    os.mkdir("download/")
+    yield
+    os.remove("test_database.db")
