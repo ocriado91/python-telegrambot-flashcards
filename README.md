@@ -12,6 +12,13 @@ This repository contains a Python Telegram Bot that allows users to create and s
 - Study flashcards in a randomized order
 - Keep track of progress and performance
 
+## Commands
+
+- `/new_item`: Add a new item. This item can be a `answer-quiz` text, a two
+  columns CSV file to import multiple items at the same time,
+  or photo, video or audio with caption as answer.
+- `/new_round`: A new quiz round begins!
+
 ## Requirements
 
 To run the Python Telegram Bot Flashcards, you'll need the following:
