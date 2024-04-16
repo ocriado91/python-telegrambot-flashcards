@@ -1,4 +1,4 @@
-name: FlashCardBot Workflow
+name: Unit Test FlashCardBot Workflow
 
 on: [push]
 

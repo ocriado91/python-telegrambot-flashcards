@@ -1,4 +1,4 @@
-name: FlashCardBot Workflow
+name: Coverage FlashCardBot Workflow
 
 on: [push]
 
