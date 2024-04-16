@@ -43,17 +43,4 @@ jobs:
     steps:
       - name: Run docker container into Raspberry Pi
         run: |
-          # Create a configuration file from template
-          mkdir secrets/
-          cp config/template.toml secrets/config.toml
-          # Replace TelegramBot API Key with variable through Github Actions
-          sed -i "s|<YOUR_API_KEY>|${{ secrets.TELEGRAMBOT_API_KEY }}|g" secrets/config.toml
-          # Export DOCKER_HOST variable
-          DOCKER_HOST=ssh://rpimon@rpi-mon-server
-          # Stop and remove previous docker container
-          docker stop flashcardbot
-          docker container rm flashcardbot
-          # Build docker image into Raspberry Pi
-          docker build -t flashcardbot .
-          # Run docker container into Raspberry Pi
-          docker run --name flashcardbot -d flashcardbot python3 src/flashcard.py secrets/config.toml
+          ./scripts/deploy_rpi.sh
