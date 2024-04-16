@@ -1,4 +1,4 @@
-name: FlashCardBot Workflow
+name: Unit Test
 
 on: [push]
 
@@ -27,22 +27,8 @@ jobs:
     - name: Lint with ruff
       run: |
         ruff check .
-    - name: Test with pytest and codecov
+    - name: Test with pytest
       run: |
         export PYTHONPATH=src/
         coverage run -m pytest -v
         coverage xml
-    - name: "Upload coverage to Codecov"
-      uses: codecov/codecov-action@v2
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
-
-  deployment:
-    runs-on: self-hosted
-    needs: unit-testing
-    steps:
-      - name: Run docker container into Raspberry Pi
-        run: |
-          ./scripts/deploy_rpi.sh
-        env:
-          TELEGRAMBOT_API_KEY: ${{ secrets.TELEGRAMBOT_API_KEY }}
