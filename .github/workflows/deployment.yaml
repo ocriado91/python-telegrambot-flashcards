@@ -1,4 +1,4 @@
-name: Deployment FlashCardBot Workflow
+name: Deployment
 
 on:
   push:
