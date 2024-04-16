@@ -43,6 +43,7 @@ jobs:
       - name: Run docker container into Raspberry Pi
         run: |
           # Create a configuration file from template
+          mkdir secrets/
           cp config/template.toml secrets/config.toml
           # Replace TelegramBot API Key with variable through Github Actions
           sed -i "s|<YOUR_API_KEY>|${{ secrets.TELEGRAMBOT_API_KEY }}|g" secrets/config.toml
