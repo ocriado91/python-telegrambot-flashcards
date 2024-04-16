@@ -10,7 +10,7 @@ mkdir secrets/
 cp config/template.toml secrets/config.toml
 # Replace TelegramBot API Key with variable through Github Actions
 echo "Replacing Telegram Bot API"
-sed -i "s|<YOUR_API_KEY>|${{ secrets.TELEGRAMBOT_API_KEY }}|g" secrets/config.toml
+sed -i "s|<YOUR_API_KEY>|${{ TELEGRAMBOT_API_KEY }}|g" secrets/config.toml
 # Export DOCKER_HOST variable
 export DOCKER_HOST=ssh://rpimon@rpi-mon-server
 # Stop and remove previous docker container
