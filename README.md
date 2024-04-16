@@ -27,6 +27,8 @@ To run the Python Telegram Bot Flashcards, you'll need the following:
 
 ## Installation
 
+### a) From source
+
 1. Clone the repository:
 
 ```bash
@@ -47,6 +49,15 @@ the `config/template.toml` file with the related information
 3. Start the bot:
 ```bash
 python3 src/flashcard.py config/<YOUR_CONFIG_FILE>.toml
+```
+
+### b) Using Docker
+
+__NOTE__: It is required to fill the configuration template with your own Telegram Bot API Key. [Futher instructions](https://core.telegram.org/bots/features#botfather). In the following example, a `config.toml` file has been properly modified before to build docker image.
+
+```bash
+docker build -t flashcardbot .
+docker run --name telegrambot -d flashcardbot python3 src/flashcard.py config/config.toml
 ```
 
 ## Usage
