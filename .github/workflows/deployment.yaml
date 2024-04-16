@@ -1,0 +1,16 @@
+name: FlashCardBot Workflow
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deployment:
+    runs-on: self-hosted
+    steps:
+      - name: Run docker container into Raspberry Pi
+        run: |
+          ./scripts/deploy_rpi.sh
+        env:
+          TELEGRAMBOT_API_KEY: ${{ secrets.TELEGRAMBOT_API_KEY }}

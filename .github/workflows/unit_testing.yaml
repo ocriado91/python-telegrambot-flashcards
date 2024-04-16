@@ -1,0 +1,34 @@
+name: FlashCardBot Workflow
+
+on: [push]
+
+jobs:
+  unit-testing:
+
+    runs-on: self-hosted
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install ruff pytest coverage
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Install TelegramBot API package from Github repository
+      run: |
+        pip install git+https://github.com/ocriado91/python-telegrambot --force-reinstall
+    - name: Lint with ruff
+      run: |
+        ruff check .
+    - name: Test with pytest and codecov
+      run: |
+        export PYTHONPATH=src/
+        coverage run -m pytest -v
+        coverage xml
