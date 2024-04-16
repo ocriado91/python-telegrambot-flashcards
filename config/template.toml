@@ -6,3 +6,4 @@
     SleepTime = 1
     Database = 'test_database.db'
     Timeout = 20
+    MaxAttempts = 3
