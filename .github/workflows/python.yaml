@@ -39,6 +39,7 @@ jobs:
 
   deployment:
     runs-on: self-hosted
+    needs: unit-testing
     steps:
       - name: Run docker container into Raspberry Pi
         run: |
