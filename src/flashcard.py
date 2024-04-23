@@ -77,7 +77,8 @@ class FlashCardBot:
         # Check if message text contains a valid command
         command = list(message.values())[0]
         if command not in self.config['FlashCardBot']['Commands']:
-            raise CommandException(f"Invalid command {command}")
+            commands = ', '.join(self.config['FlashCardBot']['Commands'])
+            raise CommandException(f"Invalid command {command}.\nAvailable commands: {commands}")
 
         return command.replace('/', '')
 
