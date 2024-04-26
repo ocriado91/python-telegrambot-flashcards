@@ -1,5 +1,9 @@
 # Python Telegram Bot Flashcards
-[![FlashCardBot Workflow](https://github.com/ocriado91/python-telegrambot-flashcards/actions/workflows/python.yaml/badge.svg)](https://github.com/ocriado91/python-telegrambot-flashcards/actions/workflows/python.yaml)
+
+[![Unit Test](https://github.com/ocriado91/python-telegrambot-flashcards/actions/workflows/unit_testing.yaml/badge.svg)](https://github.com/ocriado91/python-telegrambot-flashcards/actions/workflows/unit_testing.yaml)
+[![Deployment](https://github.com/ocriado91/python-telegrambot-flashcards/actions/workflows/deployment.yaml/badge.svg)](https://github.com/ocriado91/python-telegrambot-flashcards/actions/workflows/deployment.yaml)
+[![Current Status](https://github.com/ocriado91/python-telegrambot-flashcards/actions/workflows/current_status.yaml/badge.svg)](https://github.com/ocriado91/python-telegrambot-flashcards/actions/workflows/current_status.yaml)
+[![codecov](https://codecov.io/gh/ocriado91/python-telegrambot-flashcards/branch/main/graph/badge.svg?token=bjdlYmQmOw)](https://codecov.io/gh/ocriado91/python-telegrambot-flashcards)
 [![codecov](https://codecov.io/gh/ocriado91/python-telegrambot-flashcards/branch/main/graph/badge.svg?token=bjdlYmQmOw)](https://codecov.io/gh/ocriado91/python-telegrambot-flashcards)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
