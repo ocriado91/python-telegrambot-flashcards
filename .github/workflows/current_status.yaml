@@ -1,0 +1,12 @@
+name: Current Status
+
+on: [push]
+
+jobs:
+  deployment:
+    runs-on: self-hosted
+    steps:
+      - name: Run docker container into Raspberry Pi
+        run: |
+          export DOCKER_HOST=ssh://rpimon@rpi-mon-server
+          docker container inspect flashcardbot2 &> /dev/null
