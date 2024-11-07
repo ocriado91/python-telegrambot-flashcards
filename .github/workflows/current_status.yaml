@@ -1,12 +1,18 @@
+# This pipeline check everyday at 12:00pm if the application is currently
+# running into a self-hosted runner
 name: Current Status
 
-on: [push]
+# Configure pipeline to execute using cron schedule
+# (https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule)
+on:
+  schedule:
+    - cron: "0 12 * * *"
+  workflow_dispatch:
 
 jobs:
   deployment:
     runs-on: self-hosted
     steps:
-      - name: Run docker container into Raspberry Pi
+      - name: Check if flashcardbot container is running
         run: |
-          export DOCKER_HOST=ssh://rpimon@rpi-mon-server
           docker container inspect flashcardbot &> /dev/null
