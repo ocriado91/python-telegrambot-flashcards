@@ -1,9 +1,13 @@
+# This pipeline deploys the application using the script deploy_rpi.sh
+# located into scripts folder. This pipeline is executed in main branch
+# or can be executed manually.
 name: Deployment
 
 on:
   push:
     branches:
       - main
+  # Enable manual execution (https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#workflow_dispatch)
   workflow_dispatch:
 
 jobs:
@@ -14,4 +18,6 @@ jobs:
         run: |
           ./scripts/deploy_rpi.sh
         env:
+          # Assign Github Secret variable to environment variable required
+          # by deploy_rpi.sh script
           TELEGRAMBOT_API_KEY: ${{ secrets.TELEGRAMBOT_API_KEY }}
