@@ -1,0 +1,11 @@
+name: Dummy
+
+on: [push]
+
+jobs:
+  deployment:
+    runs-on: self-hosted
+    steps:
+      - name: Run docker container into Raspberry Pi
+        run: |
+          echo "It's alive!!"
