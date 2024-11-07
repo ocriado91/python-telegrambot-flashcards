@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  deployment:
+  check-status:
     runs-on: self-hosted
     steps:
       - name: Check if flashcardbot container is running
