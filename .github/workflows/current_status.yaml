@@ -6,8 +6,7 @@ name: Current Status
 # (https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule)
 on:
   schedule:
-    - cron: "0 12 * * *"
-  workflow_dispatch: # WIP: To check functionallity
+    - cron: "*/5 * * * *"
 
 jobs:
   deployment:
