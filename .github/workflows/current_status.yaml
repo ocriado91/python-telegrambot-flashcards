@@ -8,6 +8,7 @@ on:
   schedule:
     - cron: "0 12 * * *"
   workflow_dispatch:
+  push: # WIP: To check timeout-minutes parameter into job field
 
 jobs:
   check-status:
@@ -16,3 +17,4 @@ jobs:
       - name: Check if flashcardbot container is running
         run: |
           docker container inspect flashcardbot &> /dev/null
+    timeout-minutes: 2
