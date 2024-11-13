@@ -11,6 +11,12 @@ on:
   push: # WIP: To check timeout-minutes parameter into job field
 
 jobs:
+  queued-timeout:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Workaround to detect any queued pipeline
+        run: |
+          gh --repo {owner}/{repo} run list --status queued
   check-status:
     runs-on: self-hosted
     steps:
