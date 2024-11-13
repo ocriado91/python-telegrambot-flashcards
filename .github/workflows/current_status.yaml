@@ -10,6 +10,9 @@ on:
   workflow_dispatch:
   push: # WIP: To check timeout-minutes parameter into job field
 
+env:
+  GH_TOKEN: ${{ github.token }}
+
 jobs:
   queued-timeout:
     runs-on: ubuntu-latest
