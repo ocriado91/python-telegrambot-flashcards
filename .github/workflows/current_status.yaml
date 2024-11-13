@@ -19,6 +19,7 @@ jobs:
     steps:
       - name: Workaround to detect any queued pipeline
         run: |
+          echo "Checking {owner}/{repo} queued pipelines..."
           gh --repo {owner}/{repo} run list --status queued
   check-status:
     runs-on: self-hosted
