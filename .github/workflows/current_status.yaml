@@ -19,8 +19,11 @@ jobs:
     steps:
       - name: Workaround to detect any queued pipeline
         run: |
-          echo "Checking queued pipelines in ${{ github.repository }} ..."
-          gh --repo ${{ github.repository }}  run list --status queued
+          # Original idea: https://github.com/orgs/community/discussions/50926#discussioncomment-6161198
+          # Wait 5min
+          sleep 5m
+          # Check if there is any queued pipeline into this repository and pass the workflow ID to cancel.
+          gh --repo ${{ github.repository }}  run list --status queued --json databaseId -q .[].databaseId | xargs gh --repo ${{ github.repository }} run cancel
   check-status:
     runs-on: self-hosted
     steps:
