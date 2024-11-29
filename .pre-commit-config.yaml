@@ -1,0 +1,18 @@
+repos:
+  # Execute Ruff linter and formatter to check linting rules before to commit.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.0
+    hooks:
+      # Run the linter
+      - id: ruff
+      # Run the formatter with fix option disabled
+      - id: ruff-format
+
+  # Execute GitGuardian to avoid commit secrets.
+  - repo: https://github.com/gitguardian/ggshield
+    rev: v1.33.0
+    hooks:
+      - id: ggshield
+        language_version: python3
+        stages: [commit]
+

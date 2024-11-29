@@ -1,0 +1,48 @@
+[tool.poetry]
+package-mode = false
+description = "Use TelegramBot to implement a Flashcard learning system."
+authors = ["Óscar Criado de la Torre <ocriado91@gmail.com>"]
+readme = "README.md"
+packages = [{include = "calculator", from = "src"}]
+
+# Main dependencies
+[tool.poetry.dependencies]
+python = "^3.10"
+requests = "^2.25.1"
+tomli = "^2.0.1"
+pydantic = "^2.6.4"
+telegrambot = {git = "https://github.com/ocriado91/python-telegrambot.git"}
+
+# Create optional test group to execute unit test and linter
+[tool.poetry.group.test]
+optional = true
+
+# Limited dependencies to test group
+[tool.poetry.group.test.dependencies]
+pytest = "^8.3.3"
+ruff = "^0.8.0"
+pre-commit = "^4.0.1"
+coverage = "^7.6.8"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+# By default, Ruff have the following configuration:
+# https://docs.astral.sh/ruff/configuration/, setting line length to 88 against
+# PEP-8 standard (https://peps.python.org/pep-0008/#maximum-line-length)
+line-length = 79
+
+[tool.ruff.lint]
+# Enable the following rules:
+# - "D": pydocstyle
+# - "E", "W": pycodestyle
+# - "F": Pyflakes
+select = ["D", "E", "W", "F"]
+
+# - Use multi-line-summary-second-line (D212) instead of
+# multi-line-summary-first-line (D213) in docstrings.
+#  - Avoid introducting any blank lines between class definition
+# and its docstring as defined in one-blank-line-before-class (D203)
+ignore = ["D213", "D203"]
